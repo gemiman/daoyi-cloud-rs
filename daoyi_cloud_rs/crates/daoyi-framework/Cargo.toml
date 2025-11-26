@@ -1,0 +1,18 @@
+[package]
+name = "daoyi-framework"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+validator.workspace = true
+sea-orm.workspace = true
+redis.workspace = true
+nacos-sdk.workspace = true

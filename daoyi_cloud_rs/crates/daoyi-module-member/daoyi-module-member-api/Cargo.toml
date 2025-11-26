@@ -1,0 +1,12 @@
+[package]
+name = "daoyi-module-member-api"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+daoyi-framework = { path = "../../daoyi-framework" }
+serde.workspace = true

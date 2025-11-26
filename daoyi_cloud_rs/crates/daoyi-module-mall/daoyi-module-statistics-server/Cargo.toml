@@ -1,0 +1,17 @@
+[package]
+name = "daoyi-module-statistics-server"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "daoyi-module-statistics-server"
+path = "src/main.rs"
+
+[dependencies]
+daoyi-framework = { path = "../../daoyi-framework" }
+daoyi-gateway = { path = "../../daoyi-gateway" }
+daoyi-module-statistics-api = { path = "../daoyi-module-statistics-api" }
+salvo.workspace = true
+tokio.workspace = true
+tracing.workspace = true

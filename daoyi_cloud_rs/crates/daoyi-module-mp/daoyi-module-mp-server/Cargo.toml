@@ -1,0 +1,17 @@
+[package]
+name = "daoyi-module-mp-server"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[[bin]]
+name = "daoyi-module-mp-server"
+path = "src/main.rs"
+
+[dependencies]
+daoyi-framework = { path = "../../daoyi-framework" }
+daoyi-gateway = { path = "../../daoyi-gateway" }
+daoyi-module-mp-api = { path = "../daoyi-module-mp-api" }
+salvo.workspace = true
+tokio.workspace = true
+tracing.workspace = true
