@@ -30,3 +30,7 @@
 ## 配置与安全提示
 - 不要提交本地密钥、数据库账户等，敏感信息统一放入本地 `application-local.yaml` 或环境变量。
 - 生产配置（如限流、鉴权）在 `yudao-spring-boot-starter-protection` 等 starter 中集中管理，修改需说明风险与回滚方案。
+## codex 提示
+    ```shell
+    To continue this session, run codex resume 019abf68-6fb0-7350-95d6-274239e35860
+    ```
