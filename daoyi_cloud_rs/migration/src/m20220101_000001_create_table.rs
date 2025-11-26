@@ -1,4 +1,5 @@
 use sea_orm_migration::prelude::*;
+use sea_query::{Alias, SeaRc, TableRef};
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -6,10 +7,13 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let schema = SeaRc::new(Alias::new("infra"));
+        let table = Users::Table.into_iden();
+
         manager
             .create_table(
                 Table::create()
-                    .table(Users::Table)
+                    .table(TableRef::SchemaTable(schema.clone(), table.clone()))
                     .if_not_exists()
                     .col(ColumnDef::new(Users::Id).string().not_null().primary_key())
                     .col(
@@ -24,7 +28,7 @@ impl MigrationTrait for Migration {
             .await?;
 
         let insert = Query::insert()
-            .into_table(Users::Table)
+            .into_table(TableRef::SchemaTable(schema.clone(), table.clone()))
             .columns([Users::Id, Users::Username, Users::Password])
             .values_panic([
                 "cdd0e080-5bb1-4442-b6f7-2ba60dbd0555".into(),
@@ -37,8 +41,15 @@ impl MigrationTrait for Migration {
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        let schema = SeaRc::new(Alias::new("infra"));
+        let table = Users::Table.into_iden();
+
         manager
-            .drop_table(Table::drop().table(Users::Table).to_owned())
+            .drop_table(
+                Table::drop()
+                    .table(TableRef::SchemaTable(schema, table))
+                    .to_owned(),
+            )
             .await
     }
 }
