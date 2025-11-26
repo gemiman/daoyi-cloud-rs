@@ -1,42 +1,16 @@
 [workspace]
 members = [
     ".",
+    "crates/libs/daoyi-framework",
+    "crates/modules/*",
     "migration",
-    "crates/daoyi-framework",
-    "crates/daoyi-gateway",
-    "crates/daoyi-server",
-    "crates/daoyi-module-ai/daoyi-module-ai-api",
-    "crates/daoyi-module-ai/daoyi-module-ai-server",
-    "crates/daoyi-module-bpm/daoyi-module-bpm-api",
-    "crates/daoyi-module-bpm/daoyi-module-bpm-server",
-    "crates/daoyi-module-crm/daoyi-module-crm-api",
-    "crates/daoyi-module-crm/daoyi-module-crm-server",
-    "crates/daoyi-module-erp/daoyi-module-erp-api",
-    "crates/daoyi-module-erp/daoyi-module-erp-server",
-    "crates/daoyi-module-infra/daoyi-module-infra-api",
-    "crates/daoyi-module-infra/daoyi-module-infra-server",
-    "crates/daoyi-module-iot/daoyi-module-iot-api",
-    "crates/daoyi-module-iot/daoyi-module-iot-server",
-    "crates/daoyi-module-member/daoyi-module-member-api",
-    "crates/daoyi-module-member/daoyi-module-member-server",
-    "crates/daoyi-module-mp/daoyi-module-mp-api",
-    "crates/daoyi-module-mp/daoyi-module-mp-server",
-    "crates/daoyi-module-pay/daoyi-module-pay-api",
-    "crates/daoyi-module-pay/daoyi-module-pay-server",
-    "crates/daoyi-module-report/daoyi-module-report-api",
-    "crates/daoyi-module-report/daoyi-module-report-server",
-    "crates/daoyi-module-system/daoyi-module-system-api",
-    "crates/daoyi-module-system/daoyi-module-system-server",
-    "crates/daoyi-module-mall/daoyi-module-product-api",
-    "crates/daoyi-module-mall/daoyi-module-product-server",
-    "crates/daoyi-module-mall/daoyi-module-promotion-api",
-    "crates/daoyi-module-mall/daoyi-module-promotion-server",
-    "crates/daoyi-module-mall/daoyi-module-trade-api",
-    "crates/daoyi-module-mall/daoyi-module-trade-server",
-    "crates/daoyi-module-mall/daoyi-module-statistics-api",
-    "crates/daoyi-module-mall/daoyi-module-statistics-server",
 ]
 resolver = "2"
+[workspace.package]
+version = "0.1.1"
+edition = "2024"
+rust-version = "1.89"
+readme = "./README.md"
 
 [workspace.dependencies]
 anyhow = "1.0.100"
@@ -65,10 +39,10 @@ nacos-sdk = "0.5.3"
 
 [package]
 name = "daoyi_cloud_rs"
-version = "0.1.1"
-edition = "2024"
-rust-version = "1.89"
-readme = "./README.md"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+readme.workspace = true
 
 [dependencies]
 anyhow.workspace = true
