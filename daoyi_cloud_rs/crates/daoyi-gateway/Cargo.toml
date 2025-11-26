@@ -7,7 +7,15 @@ publish = false
 [lib]
 path = "src/lib.rs"
 
+[[bin]]
+name = "daoyi-gateway"
+path = "src/main.rs"
+
 [dependencies]
 daoyi-framework = { path = "../daoyi-framework" }
+figment.workspace = true
 salvo.workspace = true
+serde.workspace = true
+tokio.workspace = true
 tracing.workspace = true
+tracing-subscriber.workspace = true
