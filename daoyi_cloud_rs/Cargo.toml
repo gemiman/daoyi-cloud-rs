@@ -28,3 +28,5 @@ tracing-subscriber = { version = "0.3.20", features = ["std", "fmt", "env-filter
 sea-orm = { version = "2.0.0-rc.19", features = ["runtime-tokio-native-tls", "sqlx-postgres"] }
 askama = "0.14.0"
 rand = "0.10.0-rc.5"
+redis = "1.0.0-rc.4"
+nacos-sdk = "0.5.3"
