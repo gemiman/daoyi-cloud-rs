@@ -1,0 +1,24 @@
+[package]
+name = "daoyi-server"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+salvo.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+daoyi-framework = { path = "../daoyi-framework" }
+daoyi-module-system = { path = "../daoyi-module-system" }
+daoyi-module-infra = { path = "../daoyi-module-infra" }
+daoyi-module-member = { path = "../daoyi-module-member" }
+daoyi-module-bpm = { path = "../daoyi-module-bpm" }
+daoyi-module-pay = { path = "../daoyi-module-pay" }
+daoyi-module-report = { path = "../daoyi-module-report" }
+daoyi-module-mp = { path = "../daoyi-module-mp" }
+daoyi-module-mall = { path = "../daoyi-module-mall" }
+daoyi-module-crm = { path = "../daoyi-module-crm" }
+daoyi-module-erp = { path = "../daoyi-module-erp" }
+daoyi-module-ai = { path = "../daoyi-module-ai" }
+daoyi-module-iot = { path = "../daoyi-module-iot" }

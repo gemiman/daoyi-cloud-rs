@@ -1,0 +1,8 @@
+[package]
+name = "daoyi-module-mp"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+daoyi-framework = { path = "../daoyi-framework" }

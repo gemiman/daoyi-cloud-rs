@@ -1,0 +1,15 @@
+[package]
+name = "daoyi-gateway"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+salvo.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+daoyi-framework = { path = "../daoyi-framework" }
+daoyi-module-system = { path = "../daoyi-module-system" }
+daoyi-module-infra = { path = "../daoyi-module-infra" }
+daoyi-module-member = { path = "../daoyi-module-member" }
