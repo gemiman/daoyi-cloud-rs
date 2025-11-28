@@ -1,6 +1,0 @@
-[package]
-name = "daoyi-framework"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
