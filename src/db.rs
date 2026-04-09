@@ -1,6 +1,6 @@
 use crate::conf;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, Statement};
-use std::cmp::max;
+// use std::cmp::max;
 use std::time::Duration;
 
 pub async fn init() -> anyhow::Result<DatabaseConnection> {
@@ -15,10 +15,12 @@ pub async fn init() -> anyhow::Result<DatabaseConnection> {
     );
     tracing::info!("Connecting to database: {}", url);
     let mut options = ConnectOptions::new(url);
-    let cpus = num_cpus::get() as u32;
+    // let cpus = num_cpus::get() as u32;
     options
-        .min_connections(max(cpus * 4, 10))
-        .max_connections(max(cpus * 8, 20))
+        // .min_connections(max(cpus * 4, 10))
+        // .max_connections(max(cpus * 8, 20))
+        .min_connections(2)
+        .max_connections(10)
         .connect_timeout(Duration::from_secs(30))
         .acquire_timeout(Duration::from_secs(30))
         .idle_timeout(Duration::from_secs(60))
