@@ -5,8 +5,8 @@ use axum::extract::State;
 use axum::{Router, debug_handler, routing};
 use sea_orm::Condition;
 
-use crate::error::ApiResult;
-use crate::response::ApiResponse;
+use crate::response::CommonResult;
+use crate::success;
 use sea_orm::prelude::*;
 
 pub fn create_router() -> Router<AppState> {
@@ -16,7 +16,7 @@ pub fn create_router() -> Router<AppState> {
 #[debug_handler]
 async fn query_users(
     State(AppState { dc }): State<AppState>,
-) -> ApiResult<ApiResponse<Vec<sys_user::Model>>> {
+) -> CommonResult<Vec<sys_user::Model>> {
     let users = SysUser::find()
         // .filter(sys_user::Column::Gender.eq("male"))
         .filter(
@@ -32,5 +32,5 @@ async fn query_users(
         .all(&dc)
         .await
         .unwrap();
-    Ok(ApiResponse::ok(Some(users)))
+    success!(users)
 }
