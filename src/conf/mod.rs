@@ -1,7 +1,9 @@
+pub mod db;
 pub mod server;
 
 use anyhow::Context;
 use config::{Config, FileFormat};
+pub use db::DatabaseConfig;
 use serde::Deserialize;
 pub use server::ServerConfig;
 use std::sync::LazyLock;
@@ -11,7 +13,8 @@ static CONFIG: LazyLock<AppConfig> =
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
-    pub server: ServerConfig,
+    server: ServerConfig,
+    database: DatabaseConfig,
 }
 
 impl AppConfig {
@@ -32,6 +35,14 @@ impl AppConfig {
             .with_context(|| anyhow::anyhow!("Failed to load conf"))?
             .try_deserialize()
             .with_context(|| anyhow::anyhow!("Failed to deserialize conf"))
+    }
+
+    pub fn server(&self) -> &ServerConfig {
+        &self.server
+    }
+
+    pub fn database(&self) -> &DatabaseConfig {
+        &self.database
     }
 }
 

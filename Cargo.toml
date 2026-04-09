@@ -11,3 +11,5 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "chrono"] }
 config = { version = "0.15.22", features = ["yaml"] }
 serde = { version = "1.0.228", features = ["derive"] }
 anyhow = { version = "1.0.102" }
+sea-orm = { version = "2.0.0-rc.37", features = ["with-chrono", "debug-print", "sqlx-postgres", "with-rust_decimal", "runtime-tokio"] }
+num_cpus = { version = "1.17.0" }
