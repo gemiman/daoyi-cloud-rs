@@ -1,6 +1,7 @@
 use crate::app::AppState;
 use crate::conf::ServerConfig;
-use axum::Router;
+use crate::error::{ApiError, ApiResult};
+use axum::{Router, debug_handler, routing};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
@@ -27,6 +28,22 @@ impl Server {
     }
 
     fn build_router(&self, state: AppState, router: Router<AppState>) -> Router {
-        Router::new().merge(router).with_state(state)
+        Router::new()
+            .route("/", routing::get(index))
+            .merge(router)
+            .fallback(async || -> ApiResult<()> {
+                tracing::warn!("Not found");
+                Err(ApiError::NotFound)
+            })
+            .method_not_allowed_fallback(async || -> ApiResult<()> {
+                tracing::warn!("Method not allowed");
+                Err(ApiError::MethodNotAllowed)
+            })
+            .with_state(state)
     }
+}
+
+#[debug_handler]
+async fn index() -> &'static str {
+    "Hello DaoYi Cloud Rust!"
 }

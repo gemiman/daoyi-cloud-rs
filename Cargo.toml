@@ -18,6 +18,7 @@ serde.workspace = true
 anyhow.workspace = true
 sea-orm.workspace = true
 #num_cpus.workspace = true
+thiserror.workspace = true
 
 [workspace]
 members = ["crates/libs/commons/*", "crates/libs/entities/*", "crates/bins/*"]
@@ -49,3 +50,4 @@ serde = { version = "1.0.228", features = ["derive"] }
 anyhow = { version = "1.0.102" }
 sea-orm = { version = "2.0.0-rc.37", features = ["with-chrono", "debug-print", "sqlx-postgres", "with-rust_decimal", "runtime-tokio"] }
 #num_cpus = { version = "1.17.0" }
+thiserror = { version = "2.0.18" }
