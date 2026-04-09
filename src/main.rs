@@ -1,35 +1,30 @@
+pub mod app;
 pub mod conf;
 pub mod db;
 pub mod entity;
 pub mod logger;
+pub mod server;
 
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::{Router, debug_handler, routing};
 use sea_orm::Condition;
-use tokio::net::TcpListener;
 
+use crate::app::AppState;
 use crate::entity::sys_user;
 use entity::prelude::*;
 use sea_orm::prelude::*;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    logger::init();
-    let dc = db::init().await?;
     let router = Router::new()
         .route("/", routing::get(index))
-        .route("/users", routing::get(query_users))
-        .with_state(dc);
-    let port = conf::get().server().port();
-    let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await?;
-    tracing::info!("listening on http://{}", listener.local_addr()?);
-    axum::serve(listener, router).await?;
-    Ok(())
+        .route("/users", routing::get(query_users));
+    app::run(router).await
 }
 
 #[debug_handler]
-async fn query_users(State(dc): State<DatabaseConnection>) -> impl IntoResponse {
+async fn query_users(State(AppState { dc }): State<AppState>) -> impl IntoResponse {
     let users = SysUser::find()
         // .filter(sys_user::Column::Gender.eq("male"))
         .filter(
