@@ -30,7 +30,6 @@ async fn query_users(
                 ),
         )
         .all(&dc)
-        .await
-        .unwrap();
+        .await?;
     success!(users)
 }
