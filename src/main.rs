@@ -1,3 +1,4 @@
+pub mod conf;
 pub mod logger;
 
 use axum::{Router, debug_handler, routing};
@@ -7,8 +8,9 @@ use tokio::net::TcpListener;
 async fn main() {
     logger::init();
     let router = Router::new().route("/", routing::get(index));
-    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    tracing::info!("listening on http://0.0.0.0:3000");
+    let port = conf::get().server.port();
+    let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await.unwrap();
+    tracing::info!("listening on http://{}", listener.local_addr().unwrap());
     axum::serve(listener, router).await.unwrap();
 }
 
