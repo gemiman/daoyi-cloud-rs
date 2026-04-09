@@ -6,10 +6,9 @@ use config::{Config, FileFormat};
 pub use db::DatabaseConfig;
 use serde::Deserialize;
 pub use server::ServerConfig;
-use std::sync::LazyLock;
+use tokio::sync::OnceCell;
 
-static CONFIG: LazyLock<AppConfig> =
-    LazyLock::new(|| AppConfig::load().expect("Failed to initialize conf"));
+static CONFIG: OnceCell<AppConfig> = OnceCell::const_new();
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
@@ -18,10 +17,10 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
-    pub fn load() -> anyhow::Result<Self> {
-        Config::builder()
+    pub fn load(app_name: &str) -> anyhow::Result<()> {
+        let config = Config::builder()
             .add_source(
-                config::File::with_name("resources/application")
+                config::File::with_name(format!("resources/application-{app_name}").as_str())
                     .format(FileFormat::Yaml)
                     .required(true),
             )
@@ -34,7 +33,11 @@ impl AppConfig {
             .build()
             .with_context(|| anyhow::anyhow!("Failed to load conf"))?
             .try_deserialize()
-            .with_context(|| anyhow::anyhow!("Failed to deserialize conf"))
+            .with_context(|| anyhow::anyhow!("Failed to deserialize conf"))?;
+        CONFIG
+            .set(config)
+            .with_context(|| anyhow::anyhow!("Failed to set conf"))?;
+        Ok(())
     }
 
     pub fn server(&self) -> &ServerConfig {
@@ -47,5 +50,7 @@ impl AppConfig {
 }
 
 pub fn get() -> &'static AppConfig {
-    &CONFIG
+    CONFIG
+        .get()
+        .unwrap_or_else(|| panic!("App config not initialized"))
 }

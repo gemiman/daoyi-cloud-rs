@@ -9,3 +9,8 @@ readme.workspace = true
 authors.workspace = true
 
 [dependencies]
+axum.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
+daoyi-cloud-common.workspace = true
+daoyi-entity-demo.workspace = true

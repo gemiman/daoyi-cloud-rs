@@ -1,0 +1,10 @@
+server:
+  port: 28080
+
+database:
+  host: 127.0.0.1
+  port: 5432
+  user: user0
+  password: 123456
+  database: postgres
+  schema: demo

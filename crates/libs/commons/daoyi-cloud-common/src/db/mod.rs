@@ -1,9 +1,19 @@
 use crate::conf;
-use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, Statement};
 // use std::cmp::max;
+use anyhow::Context;
+use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, Statement};
 use std::time::Duration;
+use tokio::sync::OnceCell;
 
-pub async fn init() -> anyhow::Result<DatabaseConnection> {
+static DB_CONN: OnceCell<DatabaseConnection> = OnceCell::const_new();
+
+pub fn get() -> &'static DatabaseConnection {
+    DB_CONN
+        .get()
+        .unwrap_or_else(|| panic!("Database connection not initialized"))
+}
+
+pub async fn init() -> anyhow::Result<()> {
     let db_conf = conf::get().database();
     let url = format!(
         "postgres://{}:{}@{}:{}/{}",
@@ -31,7 +41,10 @@ pub async fn init() -> anyhow::Result<DatabaseConnection> {
     dc.ping().await?;
     tracing::info!("Database connection established");
     log_database_version(&dc).await?;
-    Ok(dc)
+    DB_CONN
+        .set(dc)
+        .with_context(|| "Failed to set database connection")?;
+    Ok(())
 }
 
 async fn log_database_version(dc: &DatabaseConnection) -> anyhow::Result<()> {

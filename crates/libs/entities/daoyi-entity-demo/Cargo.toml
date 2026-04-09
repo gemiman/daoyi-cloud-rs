@@ -11,3 +11,4 @@ authors.workspace = true
 [dependencies]
 sea-orm.workspace = true
 serde.workspace = true
+daoyi-cloud-common.workspace = true
