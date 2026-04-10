@@ -18,6 +18,25 @@ RUST_LOG=DEBUG cargo run
 
 # 推送到github
 
+```config
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = git@gitee.com:daoyi2026/daoyi-cloud-rs.git
+	pushurl = git@gitee.com:daoyi2026/daoyi-cloud-rs.git
+	pushurl = git@github.com:gemiman/daoyi-cloud-rs.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[branch "master"]
+	remote = origin
+	merge = refs/heads/master
+[remote "github"]
+	url = git@github.com:gemiman/daoyi-cloud-rs.git
+	fetch = +refs/heads/*:refs/remotes/github/*
+
+```
 ```shell
 # 推送到两个平台
 git push origin master
