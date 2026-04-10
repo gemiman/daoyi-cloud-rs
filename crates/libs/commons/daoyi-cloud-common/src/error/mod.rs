@@ -26,7 +26,7 @@ pub enum ApiError {
     Json(#[from] JsonRejection),
     #[error("参数校验失败: {0}")]
     Validation(String),
-    #[error("认证失败: {0}")]
+    #[error("密码错误: {0}")]
     Bcrypt(#[from] bcrypt::BcryptError),
     #[error("认证失败：{0}")]
     JWT(#[from] jsonwebtoken::errors::Error),
