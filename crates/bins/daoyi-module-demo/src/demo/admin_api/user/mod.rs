@@ -1,5 +1,6 @@
 use axum::extract::Query;
 use axum::{Router, debug_handler, routing};
+use axum_valid::Valid;
 use daoyi_cloud_common::app::AppState;
 use daoyi_cloud_common::pojo::pagination::PageResult;
 use daoyi_cloud_common::response::CommonResult;
@@ -16,7 +17,7 @@ pub fn create_router() -> Router<AppState> {
 
 #[debug_handler]
 async fn find_page(
-    Query(params): Query<UserQueryParams>,
+    Valid(Query(params)): Valid<Query<UserQueryParams>>,
 ) -> CommonResult<PageResult<sys_user::Model>> {
     let users = sys_user_service::query_page(params).await?;
     success!(users)

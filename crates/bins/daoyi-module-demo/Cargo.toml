@@ -14,3 +14,4 @@ tokio.workspace = true
 anyhow.workspace = true
 daoyi-cloud-common.workspace = true
 daoyi-entity-demo.workspace = true
+axum-valid.workspace = true

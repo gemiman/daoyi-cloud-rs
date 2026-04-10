@@ -21,3 +21,4 @@ tokio.workspace = true
 tower-http.workspace = true
 xid.workspace = true
 bytesize.workspace = true
+validator.workspace = true
