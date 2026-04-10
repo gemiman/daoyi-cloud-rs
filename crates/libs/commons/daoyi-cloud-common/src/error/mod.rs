@@ -14,7 +14,7 @@ pub enum ApiError {
     Biz(String),
     #[error("Error: {0}")]
     Internal(#[from] anyhow::Error),
-    #[error("Error: {0}")]
+    #[error("数据库异常: {0}")]
     DbErr(#[from] sea_orm::DbErr),
 }
 

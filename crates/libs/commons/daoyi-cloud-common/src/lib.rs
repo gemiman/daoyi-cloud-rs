@@ -3,5 +3,7 @@ pub mod conf;
 pub mod db;
 pub mod error;
 pub mod logger;
+pub mod pojo;
 pub mod response;
 pub mod server;
+pub mod utils;
