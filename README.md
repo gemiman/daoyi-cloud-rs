@@ -16,6 +16,35 @@ sea-orm-cli generate entity -s demo --with-serde both --model-extra-attributes '
 RUST_LOG=DEBUG cargo run
 ```
 
+# 升级依赖
+
+```shell
+# 安装cargo-edit（包含upgrade）
+cargo install cargo-edit
+
+# 升级所有依赖到最新兼容版本（同时更新 Cargo.toml）
+cargo upgrade
+
+# 只查看会更新哪些内容，不实际执行（推荐先跑这个）
+cargo upgrade --dry-run
+
+# 指定某个包升级
+cargo upgrade -p axum
+
+# 升级到最新版本（允许 breaking change）
+cargo upgrade --upgrade all
+
+# 升级类型选择
+cargo upgrade --upgrade patch     # 只升补丁版本 (0.8.1 → 0.8.2)
+cargo upgrade --upgrade minor     # 升小版本 (0.8.x → 0.9.x)
+cargo upgrade --upgrade all       # 全部升级 (0.8.x → 1.x)
+cargo upgrade --upgrade compatible # 默认行为，兼容性升级
+
+# 升级到 Cargo.lock 中记录的版本号
+cargo upgrade --to-lockfile
+
+```
+
 # 推送到github
 
 ```config
