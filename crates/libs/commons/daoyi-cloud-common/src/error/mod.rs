@@ -1,4 +1,5 @@
 use crate::response::ApiResponse;
+use axum::extract::rejection::{JsonRejection, PathRejection, QueryRejection};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
@@ -16,6 +17,12 @@ pub enum ApiError {
     Internal(#[from] anyhow::Error),
     #[error("数据库异常: {0}")]
     DbErr(#[from] sea_orm::DbErr),
+    #[error("查询参数异常: {0}")]
+    Query(#[from] QueryRejection),
+    #[error("路径参数异常: {0}")]
+    Path(#[from] PathRejection),
+    #[error("请求体参数异常: {0}")]
+    Json(#[from] JsonRejection),
 }
 
 impl ApiError {
@@ -25,6 +32,7 @@ impl ApiError {
             ApiError::MethodNotAllowed => StatusCode::METHOD_NOT_ALLOWED,
             ApiError::Biz(_) => StatusCode::OK,
             ApiError::Internal(_) | ApiError::DbErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::Query(_) | ApiError::Path(_) | ApiError::Json(_) => StatusCode::BAD_REQUEST,
         }
     }
 }

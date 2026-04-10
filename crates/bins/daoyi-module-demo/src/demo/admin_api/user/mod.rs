@@ -1,7 +1,7 @@
-use axum::extract::Query;
 use axum::{Router, debug_handler, routing};
 use axum_valid::Valid;
 use daoyi_cloud_common::app::AppState;
+use daoyi_cloud_common::extract::query::Query;
 use daoyi_cloud_common::pojo::pagination::PageResult;
 use daoyi_cloud_common::response::CommonResult;
 use daoyi_cloud_common::success;

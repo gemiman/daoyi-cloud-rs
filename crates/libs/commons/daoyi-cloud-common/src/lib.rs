@@ -2,6 +2,7 @@ pub mod app;
 pub mod conf;
 pub mod db;
 pub mod error;
+pub mod extract;
 pub mod logger;
 pub mod pojo;
 pub mod response;
