@@ -13,3 +13,4 @@ sea-orm.workspace = true
 serde.workspace = true
 daoyi-cloud-common.workspace = true
 validator.workspace = true
+tracing.workspace = true

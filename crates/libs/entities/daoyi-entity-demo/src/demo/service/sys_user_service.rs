@@ -77,6 +77,7 @@ pub async fn get_user_by_id(id: String) -> ApiResult<Option<sys_user::Model>> {
 }
 
 pub async fn delete_user_by_id(id: String) -> ApiResult<bool> {
-    SysUser::delete_by_id(id).exec(db::get()).await?;
+    let result = SysUser::delete_by_id(&id).exec(db::get()).await?;
+    tracing::info!("delete_user_by_id {id} result: {:?}", result);
     Ok(true)
 }
