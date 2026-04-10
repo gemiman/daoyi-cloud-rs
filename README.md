@@ -22,26 +22,25 @@ RUST_LOG=DEBUG cargo run
 # 安装cargo-edit（包含upgrade）
 cargo install cargo-edit
 
-# 升级所有依赖到最新兼容版本（同时更新 Cargo.toml）
-cargo upgrade
-
-# 只查看会更新哪些内容，不实际执行（推荐先跑这个）
+# 1️⃣ 预览（推荐第一步）
 cargo upgrade --dry-run
 
-# 指定某个包升级
+# 2️⃣ 兼容性升级（默认行为，等于 --compatible）
+cargo upgrade
+
+# 3️⃣ 不兼容升级（跨大版本，如 axum 0.8 → 0.9）
+cargo upgrade -i
+
+# 4️⃣ 指定单个包升级
 cargo upgrade -p axum
+cargo upgrade -p axum@0.9          # 指定目标版本
 
-# 升级到最新版本（允许 breaking change）
-cargo upgrade --upgrade all
+# 5️⃣ 排除某些包，其余全部升级（含不兼容）
+cargo upgrade -i --exclude sea-orm
 
-# 升级类型选择
-cargo upgrade --upgrade patch     # 只升补丁版本 (0.8.1 → 0.8.2)
-cargo upgrade --upgrade minor     # 升小版本 (0.8.x → 0.9.x)
-cargo upgrade --upgrade all       # 全部升级 (0.8.x → 1.x)
-cargo upgrade --upgrade compatible # 默认行为，兼容性升级
+# 6️⃣ 组合使用：允许不兼容 + 允许固定版本也升
+cargo upgrade -i --pinned allow
 
-# 升级到 Cargo.lock 中记录的版本号
-cargo upgrade --to-lockfile
 
 ```
 
