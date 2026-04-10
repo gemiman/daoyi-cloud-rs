@@ -4,9 +4,17 @@ use crate::app::AppState;
 use crate::conf::ServerConfig;
 use crate::error::{ApiError, ApiResult};
 use crate::server::latency::LatencyOnResponse;
+use axum::extract::DefaultBodyLimit;
+use axum::http::StatusCode;
 use axum::{Router, debug_handler, extract, routing};
+use bytesize::ByteSize;
 use std::net::SocketAddr;
+use std::time::Duration;
 use tokio::net::TcpListener;
+use tower_http::cors;
+use tower_http::cors::CorsLayer;
+use tower_http::normalize_path::NormalizePathLayer;
+use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 pub struct Server {
@@ -32,6 +40,15 @@ impl Server {
     }
 
     fn build_router(&self, state: AppState, router: Router<AppState>) -> Router {
+        let timeout =
+            TimeoutLayer::with_status_code(StatusCode::GATEWAY_TIMEOUT, Duration::from_secs(120));
+        let body_limit = DefaultBodyLimit::max(ByteSize::gib(1).as_u64() as usize);
+        let cors = CorsLayer::new()
+            .allow_origin(cors::Any)
+            .allow_methods(cors::Any)
+            .allow_methods(cors::Any)
+            .allow_credentials(false)
+            .max_age(Duration::from_hours(12));
         let tracing = TraceLayer::new_for_http()
             .make_span_with(|request: &extract::Request| {
                 let method = request.method();
@@ -42,9 +59,13 @@ impl Server {
             .on_request(())
             .on_failure(())
             .on_response(LatencyOnResponse);
+        let normalize_path = NormalizePathLayer::trim_trailing_slash();
         Router::new()
             .route("/", routing::get(index))
             .merge(router)
+            .layer(timeout)
+            .layer(body_limit)
+            .layer(normalize_path)
             .layer(tracing)
             .fallback(async |uri: extract::OriginalUri| -> ApiResult<()> {
                 tracing::warn!(path = %uri.path(), "Not found");
@@ -54,6 +75,7 @@ impl Server {
                 tracing::warn!(method = %req.method(), path = %req.uri().path(), "Method not allowed");
                 Err(ApiError::MethodNotAllowed)
             })
+            .layer(cors)
             .with_state(state)
     }
 }
