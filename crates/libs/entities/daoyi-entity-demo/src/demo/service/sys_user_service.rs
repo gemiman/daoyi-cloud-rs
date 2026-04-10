@@ -1,11 +1,13 @@
 use crate::demo::entity::prelude::*;
 use crate::demo::entity::sys_user;
-use crate::demo::models::sys_user::UserQueryParams;
+use crate::demo::models::sys_user::{UserParams, UserQueryParams};
 use daoyi_cloud_common::db;
-use daoyi_cloud_common::error::ApiResult;
+use daoyi_cloud_common::error::{ApiError, ApiResult};
 use daoyi_cloud_common::pojo::pagination::PageResult;
+use daoyi_cloud_common::utils::id_utils;
+use daoyi_cloud_common::utils::passwd_utils::hash_passwd;
 use sea_orm::prelude::*;
-use sea_orm::{Condition, ExprTrait, QueryOrder, QueryTrait};
+use sea_orm::{ActiveValue, Condition, ExprTrait, IntoActiveModel, QueryOrder, QueryTrait};
 
 pub async fn query_page(params: UserQueryParams) -> ApiResult<PageResult<sys_user::Model>> {
     let dc = db::get();
@@ -42,4 +44,39 @@ pub async fn query_users() -> ApiResult<Vec<sys_user::Model>> {
         .all(dc)
         .await?;
     Ok(users)
+}
+
+pub async fn create_user(params: UserParams) -> ApiResult<sys_user::Model> {
+    let mut active_model = params.into_active_model();
+    active_model.id = ActiveValue::Set(id_utils::next_str_id());
+    active_model.password = ActiveValue::Set(hash_passwd(&active_model.password.take().unwrap())?);
+    let model = active_model.insert(db::get()).await?;
+    Ok(model)
+}
+
+pub async fn update_user_by_id(id: String, params: UserParams) -> ApiResult<bool> {
+    let model = SysUser::find_by_id(id)
+        .one(db::get())
+        .await?
+        .ok_or_else(|| ApiError::Biz(String::from("用户不存在")))?;
+    let password = params.password.clone();
+    let mut active_model = params.into_active_model();
+    active_model.id = ActiveValue::Unchanged(model.id);
+    if password.is_empty() {
+        active_model.password = ActiveValue::Unchanged(model.password);
+    } else {
+        active_model.password = ActiveValue::Set(hash_passwd(&password)?);
+    }
+    active_model.update(db::get()).await?;
+    Ok(true)
+}
+
+pub async fn get_user_by_id(id: String) -> ApiResult<Option<sys_user::Model>> {
+    let user = SysUser::find_by_id(id).one(db::get()).await?;
+    Ok(user)
+}
+
+pub async fn delete_user_by_id(id: String) -> ApiResult<bool> {
+    SysUser::delete_by_id(id).exec(db::get()).await?;
+    Ok(true)
 }

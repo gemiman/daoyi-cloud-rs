@@ -26,6 +26,8 @@ pub enum ApiError {
     Json(#[from] JsonRejection),
     #[error("参数校验失败: {0}")]
     Validation(String),
+    #[error("密码Hash失败: {0}")]
+    Bcrypt(#[from] bcrypt::BcryptError),
 }
 
 impl From<ValidRejection<ApiError>> for ApiError {
@@ -75,7 +77,9 @@ impl ApiError {
             ApiError::NotFound => StatusCode::NOT_FOUND,
             ApiError::MethodNotAllowed => StatusCode::METHOD_NOT_ALLOWED,
             ApiError::Biz(_) => StatusCode::OK,
-            ApiError::Internal(_) | ApiError::DbErr(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            ApiError::Internal(_) | ApiError::DbErr(_) | ApiError::Bcrypt(_) => {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
             ApiError::Query(_)
             | ApiError::Path(_)
             | ApiError::Json(_)
