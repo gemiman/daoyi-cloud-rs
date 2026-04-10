@@ -8,13 +8,13 @@ pub type ApiResult<T> = Result<T, ApiError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
-    #[error("Not found")]
+    #[error("服务器迷路了~")]
     NotFound,
-    #[error("Method not allowed")]
+    #[error("请求方法不被允许")]
     MethodNotAllowed,
     #[error("{0}")]
     Biz(String),
-    #[error("Error: {0}")]
+    #[error("错误: {0}")]
     Internal(#[from] anyhow::Error),
     #[error("数据库异常: {0}")]
     DbErr(#[from] sea_orm::DbErr),
@@ -28,6 +28,8 @@ pub enum ApiError {
     Validation(String),
     #[error("密码Hash失败: {0}")]
     Bcrypt(#[from] bcrypt::BcryptError),
+    #[error("JWT错误：{0}")]
+    JWT(#[from] jsonwebtoken::errors::Error),
 }
 
 impl From<ValidRejection<ApiError>> for ApiError {
@@ -84,6 +86,7 @@ impl ApiError {
             | ApiError::Path(_)
             | ApiError::Json(_)
             | ApiError::Validation(_) => StatusCode::BAD_REQUEST,
+            ApiError::JWT(_) => StatusCode::UNAUTHORIZED,
         }
     }
 }

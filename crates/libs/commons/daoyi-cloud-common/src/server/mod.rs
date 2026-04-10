@@ -4,6 +4,7 @@ use crate::app::AppState;
 use crate::conf::ServerConfig;
 use crate::error::{ApiError, ApiResult};
 use crate::server::latency::LatencyOnResponse;
+use crate::utils::id_utils;
 use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
 use axum::{Router, debug_handler, extract, routing};
@@ -53,7 +54,7 @@ impl Server {
             .make_span_with(|request: &extract::Request| {
                 let method = request.method();
                 let path = request.uri().path();
-                let id = xid::new();
+                let id = id_utils::xid();
                 tracing::info_span!("Api Request", id = %id, method = %method, path = %path)
             })
             .on_request(())

@@ -23,3 +23,7 @@ pub fn next_id() -> i64 {
 pub fn next_str_id() -> String {
     next_id().to_string()
 }
+
+pub fn xid() -> String {
+    xid::new().to_string()
+}

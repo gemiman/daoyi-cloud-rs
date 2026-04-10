@@ -16,3 +16,5 @@ pub const fn default_true() -> bool {
 pub const fn default_false() -> bool {
     false
 }
+
+pub const DEFAULT_JWT_SECRET: &str = "1qasrf45Xt6yh45tyhj6Q7yuikl89iolfty7";
