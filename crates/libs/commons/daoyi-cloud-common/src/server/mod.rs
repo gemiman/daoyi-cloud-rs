@@ -1,9 +1,13 @@
+pub mod latency;
+
 use crate::app::AppState;
 use crate::conf::ServerConfig;
 use crate::error::{ApiError, ApiResult};
-use axum::{Router, debug_handler, routing};
+use crate::server::latency::LatencyOnResponse;
+use axum::{Router, debug_handler, extract, routing};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
+use tower_http::trace::TraceLayer;
 
 pub struct Server {
     config: &'static ServerConfig,
@@ -28,15 +32,26 @@ impl Server {
     }
 
     fn build_router(&self, state: AppState, router: Router<AppState>) -> Router {
+        let tracing = TraceLayer::new_for_http()
+            .make_span_with(|request: &extract::Request| {
+                let method = request.method();
+                let path = request.uri().path();
+                let id = xid::new();
+                tracing::info_span!("Api Request", id = %id, method = %method, path = %path)
+            })
+            .on_request(())
+            .on_failure(())
+            .on_response(LatencyOnResponse);
         Router::new()
             .route("/", routing::get(index))
             .merge(router)
-            .fallback(async || -> ApiResult<()> {
-                tracing::warn!("Not found");
+            .layer(tracing)
+            .fallback(async |uri: extract::OriginalUri| -> ApiResult<()> {
+                tracing::warn!(path = %uri.path(), "Not found");
                 Err(ApiError::NotFound)
             })
-            .method_not_allowed_fallback(async || -> ApiResult<()> {
-                tracing::warn!("Method not allowed");
+            .method_not_allowed_fallback(async |req: extract::Request| -> ApiResult<()> {
+                tracing::warn!(method = %req.method(), path = %req.uri().path(), "Method not allowed");
                 Err(ApiError::MethodNotAllowed)
             })
             .with_state(state)

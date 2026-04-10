@@ -46,3 +46,5 @@ anyhow = { version = "1.0.102" }
 sea-orm = { version = "2.0.0-rc.38", features = ["with-chrono", "debug-print", "sqlx-postgres", "with-rust_decimal", "runtime-tokio"] }
 #num_cpus = { version = "1.17.0" }
 thiserror = { version = "2.0.18" }
+tower-http = { version = "0.6.8", features = ["trace"] }
+xid = { version = "1.1.1" }
