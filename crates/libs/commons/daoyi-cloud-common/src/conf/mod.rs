@@ -1,7 +1,9 @@
+pub mod auth;
 pub mod db;
 pub mod server;
 
 use anyhow::Context;
+pub use auth::AuthConfig;
 use config::{Config, FileFormat};
 pub use db::DatabaseConfig;
 use serde::Deserialize;
@@ -14,6 +16,7 @@ static CONFIG: OnceCell<AppConfig> = OnceCell::const_new();
 pub struct AppConfig {
     server: ServerConfig,
     database: DatabaseConfig,
+    auth: AuthConfig,
 }
 
 impl AppConfig {
@@ -46,6 +49,10 @@ impl AppConfig {
 
     pub fn database(&self) -> &DatabaseConfig {
         &self.database
+    }
+
+    pub fn auth(&self) -> &AuthConfig {
+        &self.auth
     }
 }
 

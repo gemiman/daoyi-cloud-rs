@@ -32,6 +32,8 @@ pub enum ApiError {
     JWT(#[from] jsonwebtoken::errors::Error),
     #[error("未授权：{0}")]
     Unauthenticated(String),
+    #[error("Glob异常: {0}")]
+    Glob(#[from] wax::BuildError),
 }
 
 impl From<ValidRejection<ApiError>> for ApiError {
@@ -81,9 +83,10 @@ impl ApiError {
             ApiError::NotFound => StatusCode::NOT_FOUND,
             ApiError::MethodNotAllowed => StatusCode::METHOD_NOT_ALLOWED,
             ApiError::Biz(_) => StatusCode::OK,
-            ApiError::Internal(_) | ApiError::DbErr(_) | ApiError::Bcrypt(_) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            ApiError::Internal(_)
+            | ApiError::DbErr(_)
+            | ApiError::Bcrypt(_)
+            | ApiError::Glob(_) => StatusCode::INTERNAL_SERVER_ERROR,
             ApiError::Query(_)
             | ApiError::Path(_)
             | ApiError::Json(_)

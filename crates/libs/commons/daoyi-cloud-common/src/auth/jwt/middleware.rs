@@ -1,9 +1,14 @@
 use crate::auth::jwt::{JWT, default_jwt};
+use crate::conf;
 use crate::error::ApiError;
 use axum::body::Body;
 use axum::http::{Request, Response, header};
 use std::pin::Pin;
+use std::sync::LazyLock;
 use tower_http::auth::{AsyncAuthorizeRequest, AsyncRequireAuthorizationLayer};
+
+static AUTH_LAYER: LazyLock<AsyncRequireAuthorizationLayer<JWTAuth>> =
+    LazyLock::new(|| AsyncRequireAuthorizationLayer::new(JWTAuth::new(default_jwt())));
 
 #[derive(Debug, Clone)]
 pub struct JWTAuth {
@@ -29,6 +34,10 @@ impl AsyncAuthorizeRequest<Body> for JWTAuth {
     fn authorize(&mut self, mut request: Request<Body>) -> Self::Future {
         let jwt = self.jwt;
         Box::pin(async move {
+            let path = request.uri().path();
+            if conf::get().auth().ignored(path)? {
+                return Ok(request);
+            }
             let token = request
                 .headers()
                 .get(header::AUTHORIZATION)
@@ -55,6 +64,6 @@ impl AsyncAuthorizeRequest<Body> for JWTAuth {
     }
 }
 
-pub fn get_auth_layer() -> AsyncRequireAuthorizationLayer<JWTAuth> {
-    AsyncRequireAuthorizationLayer::new(JWTAuth::new(default_jwt()))
+pub fn get_auth_layer() -> &'static AsyncRequireAuthorizationLayer<JWTAuth> {
+    &AUTH_LAYER
 }

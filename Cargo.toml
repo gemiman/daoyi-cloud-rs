@@ -54,4 +54,5 @@ axum-valid = { version = "0.24.0", features = ["full_validator"] }
 regex = { version = "1.12.3" }
 idgenerator = { version = "2.0.0" }
 bcrypt = { version = "0.19.0" }
-jsonwebtoken = { version = "10.3.0" }
+jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+wax = { version = "0.7.0" }

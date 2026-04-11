@@ -12,7 +12,7 @@ use std::time::Duration;
 
 static DEFAULT_JWT: LazyLock<JWT> = LazyLock::new(|| JWT::default());
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Principal {
     pub tenant_id: String,
     pub id: String,
