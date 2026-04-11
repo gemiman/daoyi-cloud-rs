@@ -30,6 +30,8 @@ pub enum ApiError {
     Bcrypt(#[from] bcrypt::BcryptError),
     #[error("认证失败：{0}")]
     JWT(#[from] jsonwebtoken::errors::Error),
+    #[error("未授权：{0}")]
+    Unauthenticated(String),
 }
 
 impl From<ValidRejection<ApiError>> for ApiError {
@@ -86,7 +88,7 @@ impl ApiError {
             | ApiError::Path(_)
             | ApiError::Json(_)
             | ApiError::Validation(_) => StatusCode::BAD_REQUEST,
-            ApiError::JWT(_) => StatusCode::UNAUTHORIZED,
+            ApiError::JWT(_) | ApiError::Unauthenticated(_) => StatusCode::UNAUTHORIZED,
         }
     }
 }
@@ -96,5 +98,11 @@ impl IntoResponse for ApiError {
         let status_code = self.status_code();
         let body = axum::Json(ApiResponse::<()>::err_msg(self.to_string()));
         (status_code, body).into_response()
+    }
+}
+
+impl From<ApiError> for Response {
+    fn from(value: ApiError) -> Self {
+        value.into_response()
     }
 }
