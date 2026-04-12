@@ -3,7 +3,9 @@ pub mod latency;
 use crate::app::AppState;
 use crate::conf::ServerConfig;
 use crate::error::{ApiError, ApiResult};
+use crate::response::CommonResult;
 use crate::server::latency::LatencyOnResponse;
+use crate::success;
 use crate::utils::id_utils;
 use axum::extract::DefaultBodyLimit;
 use axum::http::StatusCode;
@@ -82,6 +84,6 @@ impl Server {
 }
 
 #[debug_handler]
-async fn index() -> &'static str {
-    "Hello DaoYi Cloud Rust!"
+async fn index() -> CommonResult<&'static str> {
+    success!("Hello DaoYi Cloud Rust!")
 }
