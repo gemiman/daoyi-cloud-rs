@@ -5,10 +5,15 @@ use utoipa::ToSchema;
 
 pub type CommonResult<T> = ApiResult<ApiResponse<T>>;
 
+/// 统一 API 响应结构
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
+#[schema(title = "ApiResponse", description = "统一 API 响应结构")]
 pub struct ApiResponse<T: Serialize + utoipa::ToSchema> {
+    /// 状态码，0 表示成功
     pub code: i32,
+    /// 提示信息
     pub msg: String,
+    /// 响应数据
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<T>,
 }

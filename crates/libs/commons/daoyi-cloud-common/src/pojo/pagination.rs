@@ -6,23 +6,33 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use validator::Validate;
 
+/// 分页查询参数
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
+#[schema(title = "PageParam", description = "分页查询参数")]
 pub struct PageParam {
+    /// 页码
     #[validate(range(min = 1, message = "页码最小值为 1"))]
     #[serde(default = "default_page_no", deserialize_with = "deserialize_number")]
     pub page_no: u64,
+    /// 每页条数
     #[validate(custom(function = "validate_page_size"))]
     #[serde(default = "default_page_size", deserialize_with = "deserialize_number")]
     pub page_size: u64,
 }
 
+/// 分页查询结果
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
+#[schema(title = "PageResult", description = "分页查询结果")]
 pub struct PageResult<T> {
+    /// 页码
     pub page_no: u64,
+    /// 每页条数
     pub page_size: u64,
+    /// 总记录数
     pub total: u64,
+    /// 数据列表
     pub list: Vec<T>,
 }
 

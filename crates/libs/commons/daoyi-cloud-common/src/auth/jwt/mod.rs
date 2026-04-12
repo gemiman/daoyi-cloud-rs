@@ -12,10 +12,15 @@ use std::time::Duration;
 
 static DEFAULT_JWT: LazyLock<JWT> = LazyLock::new(|| JWT::default());
 
+/// JWT 主体信息
 #[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
+#[schema(title = "Principal", description = "JWT 认证主体信息")]
 pub struct Principal {
+    /// 租户ID
     pub tenant_id: String,
+    /// 用户ID
     pub id: String,
+    /// 用户姓名
     pub name: String,
 }
 

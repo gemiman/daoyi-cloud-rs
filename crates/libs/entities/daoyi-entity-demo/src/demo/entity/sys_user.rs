@@ -5,20 +5,32 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+/// 系统用户
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize, ToSchema)]
 #[sea_orm(schema_name = "demo", table_name = "sys_user")]
 #[serde(rename_all = "camelCase")]
+#[schema(title = "SysUser", description = "系统用户实体")]
 pub struct Model {
+    /// 用户ID
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
+    /// 用户姓名
     pub name: String,
+    /// 性别
     pub gender: Gender,
+    /// 登录账号
     pub account: String,
+    /// 登录密码
     pub password: String,
+    /// 手机号码
     pub mobile_phone: String,
+    /// 出生日期
     pub birthday: Date,
+    /// 是否启用
     pub enabled: bool,
+    /// 创建时间
     pub created_at: DateTime,
+    /// 更新时间
     pub updated_at: DateTime,
 }
 
