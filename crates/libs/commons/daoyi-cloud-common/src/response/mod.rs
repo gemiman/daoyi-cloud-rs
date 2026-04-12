@@ -1,18 +1,19 @@
 use crate::error::ApiResult;
 use axum::response::{IntoResponse, Response};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 pub type CommonResult<T> = ApiResult<ApiResponse<T>>;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ApiResponse<T: Serialize> {
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ApiResponse<T: Serialize + utoipa::ToSchema> {
     pub code: i32,
     pub msg: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<T>,
 }
 
-impl<T: Serialize> ApiResponse<T> {
+impl<T: Serialize + utoipa::ToSchema> ApiResponse<T> {
     pub fn new<M: AsRef<str>>(code: i32, msg: M, data: Option<T>) -> Self {
         Self {
             code,
@@ -38,7 +39,7 @@ impl<T: Serialize> ApiResponse<T> {
     }
 }
 
-impl<T: Serialize> IntoResponse for ApiResponse<T> {
+impl<T: Serialize + utoipa::ToSchema> IntoResponse for ApiResponse<T> {
     fn into_response(self) -> Response {
         axum::Json(self).into_response()
     }
@@ -54,6 +55,6 @@ macro_rules! success {
     };
 }
 
-pub fn _inner_success<T: Serialize>(data: Option<T>) -> CommonResult<T> {
+pub fn _inner_success<T: Serialize + utoipa::ToSchema>(data: Option<T>) -> CommonResult<T> {
     Ok(ApiResponse::ok(data))
 }

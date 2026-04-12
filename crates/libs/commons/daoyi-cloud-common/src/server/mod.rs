@@ -19,6 +19,8 @@ use tower_http::cors::CorsLayer;
 use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
+use utoipa::openapi::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 pub struct Server {
     config: &'static ServerConfig,
@@ -29,11 +31,22 @@ impl Server {
         Self { config }
     }
 
-    pub async fn start(&self, state: AppState, router: Router<AppState>) -> anyhow::Result<()> {
-        let router = self.build_router(state, router);
+    pub async fn start(
+        &self,
+        state: AppState,
+        router: Router<AppState>,
+        api: OpenApi,
+    ) -> anyhow::Result<()> {
+        let router = self.build_router(state, router, api);
         let port = self.config.port();
         let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await?;
         tracing::info!("listening on {}://{}", "http", listener.local_addr()?);
+        tracing::info!(
+            "Swagger UI: {}://{}{}",
+            "http",
+            listener.local_addr()?,
+            "/swagger-ui/"
+        );
         axum::serve(
             listener,
             router.into_make_service_with_connect_info::<SocketAddr>(),
@@ -42,7 +55,7 @@ impl Server {
         Ok(())
     }
 
-    fn build_router(&self, state: AppState, router: Router<AppState>) -> Router {
+    fn build_router(&self, state: AppState, router: Router<AppState>, api: OpenApi) -> Router {
         let timeout =
             TimeoutLayer::with_status_code(StatusCode::GATEWAY_TIMEOUT, Duration::from_secs(120));
         let body_limit = DefaultBodyLimit::max(ByteSize::gib(1).as_u64() as usize);
@@ -65,6 +78,7 @@ impl Server {
         let normalize_path = NormalizePathLayer::trim_trailing_slash();
         Router::new()
             .route("/", routing::get(index))
+            .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api))
             .merge(router)
             .layer(timeout)
             .layer(body_limit)

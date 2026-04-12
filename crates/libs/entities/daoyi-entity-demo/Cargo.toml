@@ -14,3 +14,4 @@ serde.workspace = true
 daoyi-cloud-common.workspace = true
 validator.workspace = true
 tracing.workspace = true
+utoipa.workspace = true

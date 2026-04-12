@@ -3,9 +3,10 @@ use crate::constants::default_values::default_page_size;
 use crate::extract::validations::validate_page_size;
 use crate::utils::serde_utils::deserialize_number;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use validator::Validate;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Validate)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PageParam {
     #[validate(range(min = 1, message = "页码最小值为 1"))]
@@ -16,7 +17,7 @@ pub struct PageParam {
     pub page_size: u64,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct PageResult<T> {
     pub page_no: u64,

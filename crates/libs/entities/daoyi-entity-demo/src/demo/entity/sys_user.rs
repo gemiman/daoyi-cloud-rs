@@ -3,8 +3,9 @@
 use daoyi_cloud_common::constants::enumeration::Gender;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel, Serialize, Deserialize, ToSchema)]
 #[sea_orm(schema_name = "demo", table_name = "sys_user")]
 #[serde(rename_all = "camelCase")]
 pub struct Model {

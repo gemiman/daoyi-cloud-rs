@@ -28,3 +28,5 @@ idgenerator.workspace = true
 bcrypt.workspace = true
 jsonwebtoken.workspace = true
 wax.workspace = true
+utoipa.workspace = true
+utoipa-swagger-ui.workspace = true

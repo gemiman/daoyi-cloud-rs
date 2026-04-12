@@ -4,5 +4,6 @@ pub mod api;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    app::run("server", api::create_router()).await
+    let (router, api) = api::create_router();
+    app::run("server", router, api).await
 }

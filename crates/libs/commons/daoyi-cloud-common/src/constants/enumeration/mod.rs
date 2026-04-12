@@ -1,8 +1,11 @@
 use sea_orm::prelude::*;
 // use sea_orm::{ActiveValue, IntoActiveValue};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, EnumIter, DeriveActiveEnum)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, EnumIter, DeriveActiveEnum, ToSchema,
+)]
 #[serde(rename_all = "snake_case")]
 #[sea_orm(
     rs_type = "String",

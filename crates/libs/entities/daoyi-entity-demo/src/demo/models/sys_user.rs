@@ -6,9 +6,10 @@ use daoyi_cloud_common::pojo::pagination::PageParam;
 use sea_orm::DeriveIntoActiveModel;
 use sea_orm::prelude::Date;
 use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
 use validator::Validate;
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Validate, IntoParams, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserQueryParams {
     pub keyword: Option<String>,
@@ -17,7 +18,7 @@ pub struct UserQueryParams {
     pub pagination: PageParam,
 }
 
-#[derive(Debug, Deserialize, Validate, DeriveIntoActiveModel)]
+#[derive(Debug, Deserialize, Validate, DeriveIntoActiveModel, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct UserParams {
     #[validate(length(min = 1, max = 16, message = "用户姓名长度必须在 1 到 16 之间"))]
