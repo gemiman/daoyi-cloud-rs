@@ -1,111 +1,62 @@
 pub mod latency;
 
-use crate::app::AppState;
 use crate::conf::ServerConfig;
-use crate::error::{ApiError, ApiResult};
-use crate::response::CommonResult;
-use crate::server::latency::LatencyOnResponse;
-use crate::success;
-use crate::utils::id_utils;
-use axum::extract::DefaultBodyLimit;
-use axum::http::StatusCode;
-use axum::{Router, debug_handler, extract, routing};
-use bytesize::ByteSize;
-use std::net::SocketAddr;
+use salvo::cors::{Any, Cors};
+use salvo::oapi::OpenApi;
+use salvo::prelude::*;
+use salvo::trailing_slash::{TrailingSlash, TrailingSlashAction};
+use salvo_oapi::scalar::Scalar;
+use salvo_oapi::swagger_ui::SwaggerUi;
 use std::time::Duration;
-use tokio::net::TcpListener;
-use tower_http::cors;
-use tower_http::cors::CorsLayer;
-use tower_http::normalize_path::NormalizePathLayer;
-use tower_http::timeout::TimeoutLayer;
-use tower_http::trace::TraceLayer;
-use utoipa::openapi::OpenApi;
-use utoipa_scalar::{Scalar, Servable};
-use utoipa_swagger_ui::SwaggerUi;
 
-pub struct Server {
+pub struct AppServer {
     config: &'static ServerConfig,
 }
 
-impl Server {
+impl AppServer {
     pub fn new(config: &'static ServerConfig) -> Self {
         Self { config }
     }
 
-    pub async fn start(
-        &self,
-        state: AppState,
-        router: Router<AppState>,
-        api: OpenApi,
-    ) -> anyhow::Result<()> {
-        let router = self.build_router(state, router, api);
+    pub async fn start(&self, router: Router) -> anyhow::Result<()> {
         let port = self.config.port();
-        let listener = TcpListener::bind(format!("0.0.0.0:{port}")).await?;
-        tracing::info!("listening on {}://{}", "http", listener.local_addr()?);
-        tracing::info!(
-            "Swagger UI: {}://{}{}",
-            "http",
-            listener.local_addr()?,
-            "/swagger-ui/"
-        );
-        tracing::info!(
-            "Scalar: {}://{}{}",
-            "http",
-            listener.local_addr()?,
-            "/scalar"
-        );
-        axum::serve(
-            listener,
-            router.into_make_service_with_connect_info::<SocketAddr>(),
-        )
-        .await?;
-        Ok(())
-    }
 
-    fn build_router(&self, state: AppState, router: Router<AppState>, api: OpenApi) -> Router {
-        let timeout =
-            TimeoutLayer::with_status_code(StatusCode::GATEWAY_TIMEOUT, Duration::from_secs(120));
-        let body_limit = DefaultBodyLimit::max(ByteSize::gib(1).as_u64() as usize);
-        let cors = CorsLayer::new()
-            .allow_origin(cors::Any)
-            .allow_methods(cors::Any)
-            .allow_methods(cors::Any)
+        // 创建 OpenAPI 文档
+        let doc = OpenApi::new("DaoYi Cloud API", "0.9.0").merge_router(&router);
+
+        let router = router
+            .push(doc.into_router("/api-docs/openapi.json"))
+            .push(
+                SwaggerUi::new("/swagger-ui/{_:.*}")
+                    .url("/api-docs/openapi.json")
+                    .into_router("/swagger-ui"),
+            )
+            .push(Scalar::new("/api-docs/openapi.json").into_router("/scalar"))
+            .push(Router::with_path("/").get(index))
+            .hoop(TrailingSlash::new(TrailingSlashAction::Remove));
+
+        // CORS 必须加到 Service 级别
+        let cors = Cors::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any)
             .allow_credentials(false)
-            .max_age(Duration::from_hours(12));
-        let tracing = TraceLayer::new_for_http()
-            .make_span_with(|request: &extract::Request| {
-                let method = request.method();
-                let path = request.uri().path();
-                let id = id_utils::xid();
-                tracing::info_span!("Api Request", id = %id, method = %method, path = %path)
-            })
-            .on_request(())
-            .on_failure(())
-            .on_response(LatencyOnResponse);
-        let normalize_path = NormalizePathLayer::trim_trailing_slash();
-        Router::new()
-            .route("/", routing::get(index))
-            .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api.clone()))
-            .merge(Scalar::with_url("/scalar", api))
-            .merge(router)
-            .layer(timeout)
-            .layer(body_limit)
-            .layer(normalize_path)
-            .layer(tracing)
-            .fallback(async |uri: extract::OriginalUri| -> ApiResult<()> {
-                tracing::warn!(path = %uri.path(), "Not found");
-                Err(ApiError::NotFound)
-            })
-            .method_not_allowed_fallback(async |req: extract::Request| -> ApiResult<()> {
-                tracing::warn!(method = %req.method(), path = %req.uri().path(), "Method not allowed");
-                Err(ApiError::MethodNotAllowed)
-            })
-            .layer(cors)
-            .with_state(state)
+            .max_age(Duration::from_secs(43200))
+            .into_handler();
+
+        let service = Service::new(router).hoop(cors);
+
+        let listener = TcpListener::new(("0.0.0.0", port)).bind().await;
+        tracing::info!("listening on http://0.0.0.0:{}", port);
+        tracing::info!("Swagger UI: http://localhost:{}/swagger-ui", port);
+        tracing::info!("Scalar: http://localhost:{}/scalar", port);
+
+        salvo::Server::new(listener).serve(service).await;
+        Ok(())
     }
 }
 
-#[debug_handler]
-async fn index() -> CommonResult<&'static str> {
-    success!("Hello DaoYi Cloud Rust!")
+#[handler]
+async fn index(res: &mut Response) {
+    crate::success!(res, "Hello DaoYi Cloud Rust!");
 }

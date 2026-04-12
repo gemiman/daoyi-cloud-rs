@@ -1,5 +1,4 @@
 use crate::conf;
-// use std::cmp::max;
 use anyhow::Context;
 use sea_orm::{ConnectOptions, ConnectionTrait, Database, DatabaseConnection, Statement};
 use std::time::Duration;
@@ -16,7 +15,7 @@ pub fn get() -> &'static DatabaseConnection {
 pub async fn init() -> anyhow::Result<()> {
     let db_conf = conf::get().database();
     let url = format!(
-        "postgres://{}:{}@{}:{}/{}",
+        "mysql://{}:{}@{}:{}/{}",
         db_conf.user(),
         db_conf.password(),
         db_conf.host(),
@@ -25,18 +24,14 @@ pub async fn init() -> anyhow::Result<()> {
     );
     tracing::info!("Connecting to database: {}", url);
     let mut options = ConnectOptions::new(url);
-    // let cpus = num_cpus::get() as u32;
     options
-        // .min_connections(max(cpus * 4, 10))
-        // .max_connections(max(cpus * 8, 20))
         .min_connections(2)
         .max_connections(10)
         .connect_timeout(Duration::from_secs(30))
         .acquire_timeout(Duration::from_secs(30))
         .idle_timeout(Duration::from_secs(60))
         .max_lifetime(Duration::from_secs(300))
-        .sqlx_logging(false)
-        .set_schema_search_path(db_conf.schema());
+        .sqlx_logging(false);
     let dc = Database::connect(options).await?;
     dc.ping().await?;
     tracing::info!("Database connection established");
@@ -48,16 +43,14 @@ pub async fn init() -> anyhow::Result<()> {
 }
 
 async fn log_database_version(dc: &DatabaseConnection) -> anyhow::Result<()> {
-    let version = dc
+    let result = dc
         .query_one_raw(Statement::from_string(
             dc.get_database_backend(),
-            String::from("SELECT version()"),
+            String::from("SELECT VERSION()"),
         ))
         .await?
         .ok_or_else(|| anyhow::anyhow!("Failed to get database version"))?;
-    tracing::info!(
-        "Database version: {}",
-        version.try_get_by_index::<String>(0)?
-    );
+    let version: String = result.try_get_by_index(0)?;
+    tracing::info!("Database version: {}", version);
     Ok(())
 }

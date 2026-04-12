@@ -4,7 +4,6 @@ use crate::demo::models::sys_user::{UserParams, UserQueryParams};
 use daoyi_cloud_common::db;
 use daoyi_cloud_common::error::{ApiError, ApiResult};
 use daoyi_cloud_common::pojo::pagination::PageResult;
-use daoyi_cloud_common::utils::id_utils;
 use daoyi_cloud_common::utils::passwd_utils::hash_passwd;
 use sea_orm::prelude::*;
 use sea_orm::{ActiveValue, Condition, ExprTrait, IntoActiveModel, QueryOrder, QueryTrait};
@@ -30,7 +29,6 @@ pub async fn query_page(params: UserQueryParams) -> ApiResult<PageResult<sys_use
 pub async fn query_users() -> ApiResult<Vec<sys_user::Model>> {
     let dc = db::get();
     let users = SysUser::find()
-        // .filter(sys_user::Column::Gender.eq("male"))
         .filter(
             Condition::all()
                 .add(sys_user::Column::Gender.eq("male"))
@@ -48,13 +46,12 @@ pub async fn query_users() -> ApiResult<Vec<sys_user::Model>> {
 
 pub async fn create_user(params: UserParams) -> ApiResult<sys_user::Model> {
     let mut active_model = params.into_active_model();
-    active_model.id = ActiveValue::Set(id_utils::next_str_id());
     active_model.password = ActiveValue::Set(hash_passwd(&active_model.password.take().unwrap())?);
     let model = active_model.insert(db::get()).await?;
     Ok(model)
 }
 
-pub async fn update_user_by_id(id: String, params: UserParams) -> ApiResult<bool> {
+pub async fn update_user_by_id(id: i64, params: UserParams) -> ApiResult<bool> {
     let model = SysUser::find_by_id(id)
         .one(db::get())
         .await?
@@ -71,13 +68,13 @@ pub async fn update_user_by_id(id: String, params: UserParams) -> ApiResult<bool
     Ok(true)
 }
 
-pub async fn get_user_by_id(id: String) -> ApiResult<Option<sys_user::Model>> {
+pub async fn get_user_by_id(id: i64) -> ApiResult<Option<sys_user::Model>> {
     let user = SysUser::find_by_id(id).one(db::get()).await?;
     Ok(user)
 }
 
-pub async fn delete_user_by_id(id: String) -> ApiResult<bool> {
-    let result = SysUser::delete_by_id(&id).exec(db::get()).await?;
+pub async fn delete_user_by_id(id: i64) -> ApiResult<bool> {
+    let result = SysUser::delete_by_id(id).exec(db::get()).await?;
     tracing::info!("delete_user_by_id {id} result: {:?}", result);
     Ok(true)
 }

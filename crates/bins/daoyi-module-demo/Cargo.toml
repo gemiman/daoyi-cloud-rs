@@ -13,11 +13,10 @@ categories.workspace = true
 publish = false
 
 [dependencies]
-axum.workspace = true
+salvo.workspace = true
+salvo-oapi.workspace = true
 tokio.workspace = true
 anyhow.workspace = true
 daoyi-cloud-common.workspace = true
 daoyi-entity-demo.workspace = true
 tracing.workspace = true
-utoipa.workspace = true
-#utoipa-swagger-ui.workspace = true

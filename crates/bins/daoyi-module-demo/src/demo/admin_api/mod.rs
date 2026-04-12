@@ -1,23 +1,17 @@
-use axum::Router;
-use daoyi_cloud_common::app::AppState;
-use utoipa::openapi::OpenApi;
+use salvo::prelude::*;
 
 pub mod auth;
 pub mod user;
 
-pub fn create_router() -> (Router<AppState>, OpenApi) {
-    let (auth_router, auth_api) = auth::create_router();
-    let (user_router, user_api) = user::create_router();
+pub fn create_router() -> Router {
+    let auth_router = auth::create_router();
+    let user_router = user::create_router();
 
-    let router = Router::new().nest(
-        "/demo",
-        Router::new()
-            .nest("/users", user_router)
-            .nest("/auth", auth_router),
-    );
-
-    let mut api = auth_api;
-    api.merge(user_api);
-
-    (router, api)
+    Router::new().push(
+        Router::with_path("/demo").push(
+            Router::new()
+                .push(Router::with_path("/users").push(user_router))
+                .push(Router::with_path("/auth").push(auth_router)),
+        ),
+    )
 }

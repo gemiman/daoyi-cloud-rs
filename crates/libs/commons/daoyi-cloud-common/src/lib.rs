@@ -6,7 +6,6 @@ pub mod db;
 pub mod error;
 pub mod extract;
 pub mod logger;
-pub mod openapi;
 pub mod pojo;
 pub mod response;
 pub mod server;

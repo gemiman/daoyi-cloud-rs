@@ -5,6 +5,7 @@ use crate::utils::id_utils;
 use jsonwebtoken::{
     Algorithm, DecodingKey, EncodingKey, Header, Validation, get_current_timestamp,
 };
+use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::sync::LazyLock;
@@ -13,13 +14,12 @@ use std::time::Duration;
 static DEFAULT_JWT: LazyLock<JWT> = LazyLock::new(|| JWT::default());
 
 /// JWT 主体信息
-#[derive(Debug, Clone, Serialize, utoipa::ToSchema)]
-#[schema(title = "Principal", description = "JWT 认证主体信息")]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct Principal {
     /// 租户ID
-    pub tenant_id: String,
+    pub tenant_id: i64,
     /// 用户ID
-    pub id: String,
+    pub id: i64,
     /// 用户姓名
     pub name: String,
 }
@@ -107,8 +107,8 @@ impl JWT {
             jsonwebtoken::decode(token, &self.decode_secret, &self.validation)?.claims;
         let mut parts = claims.sub.splitn(3, ':');
         let principal = Principal {
-            tenant_id: parts.next().unwrap().to_string(),
-            id: parts.next().unwrap().to_string(),
+            tenant_id: parts.next().unwrap().parse::<i64>()?,
+            id: parts.next().unwrap().parse::<i64>()?,
             name: parts.next().unwrap().to_string(),
         };
         Ok(principal)

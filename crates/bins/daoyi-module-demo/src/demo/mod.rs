@@ -1,14 +1,13 @@
-use axum::Router;
-use daoyi_cloud_common::app::AppState;
-use daoyi_cloud_common::auth;
-use utoipa::openapi::OpenApi;
+use daoyi_cloud_common::auth::jwt::middleware::JwtAuthHandler;
+use salvo::prelude::*;
 
 pub mod admin_api;
 
-pub fn create_router() -> (Router<AppState>, OpenApi) {
-    let (admin_router, admin_api) = admin_api::create_router();
-    let router = Router::new()
-        .nest("/admin-api", admin_router)
-        .route_layer(auth::jwt::middleware::get_auth_layer());
-    (router, admin_api)
+pub fn create_router() -> Router {
+    let admin_router = admin_api::create_router();
+    Router::new().push(
+        Router::with_path("/admin-api")
+            .hoop(JwtAuthHandler::new())
+            .push(admin_router),
+    )
 }

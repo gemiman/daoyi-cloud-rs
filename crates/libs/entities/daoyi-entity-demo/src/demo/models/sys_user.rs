@@ -3,16 +3,15 @@ use daoyi_cloud_common::constants::default_values::default_true;
 use daoyi_cloud_common::constants::enumeration::Gender;
 use daoyi_cloud_common::extract::validations::validate_mobile_phone;
 use daoyi_cloud_common::pojo::pagination::PageParam;
+use salvo::oapi::{ToParameters, ToSchema};
 use sea_orm::DeriveIntoActiveModel;
 use sea_orm::prelude::Date;
 use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
 use validator::Validate;
 
 /// 用户查询参数
-#[derive(Debug, Deserialize, Validate, IntoParams, ToSchema)]
+#[derive(Debug, Deserialize, Validate, ToParameters, ToSchema)]
 #[serde(rename_all = "camelCase")]
-#[schema(title = "UserQueryParams", description = "用户查询参数")]
 pub struct UserQueryParams {
     /// 搜索关键词
     pub keyword: Option<String>,
@@ -24,7 +23,6 @@ pub struct UserQueryParams {
 /// 用户新增/编辑参数
 #[derive(Debug, Deserialize, Validate, DeriveIntoActiveModel, ToSchema)]
 #[serde(rename_all = "camelCase")]
-#[schema(title = "UserParams", description = "用户新增/编辑参数")]
 pub struct UserParams {
     /// 用户姓名
     #[validate(length(min = 1, max = 16, message = "用户姓名长度必须在 1 到 16 之间"))]

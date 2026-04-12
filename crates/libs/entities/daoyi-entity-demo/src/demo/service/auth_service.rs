@@ -21,7 +21,7 @@ pub async fn login(params: LoginParams) -> ApiResult<LoginResult> {
         return Err(ApiError::Biz(String::from("账号或密码错误")));
     }
     let principal = Principal {
-        tenant_id: String::from(ROOT_ID),
+        tenant_id: ROOT_ID,
         id: model.id,
         name: model.name,
     };

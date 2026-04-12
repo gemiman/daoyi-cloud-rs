@@ -1,11 +1,10 @@
+use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 use validator::Validate;
 
 /// 登录请求参数
 #[derive(Debug, Deserialize, Validate, ToSchema)]
 #[serde(rename_all = "camelCase")]
-#[schema(title = "LoginParams", description = "登录请求参数")]
 pub struct LoginParams {
     /// 登录账号
     #[validate(length(min = 1, max = 16, message = "账号长度必须在 1 到 16 之间"))]
@@ -18,7 +17,6 @@ pub struct LoginParams {
 /// 登录结果
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
-#[schema(title = "LoginResult", description = "登录返回结果")]
 pub struct LoginResult {
     /// JWT 访问令牌
     pub access_token: String,

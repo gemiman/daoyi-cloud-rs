@@ -2,7 +2,7 @@ use regex::Regex;
 use std::cell::LazyCell;
 
 pub const PAGE_SIZE_NONE: u64 = 0;
-pub const ROOT_ID: &str = "0";
+pub const ROOT_ID: i64 = 0;
 pub const MOBILE_PHONE_REGEX: LazyCell<Regex> = LazyCell::new(|| {
     Regex::new(r"^\+?[1-9]\d{6,14}$").expect("Failed to compile mobile phone regex")
 });

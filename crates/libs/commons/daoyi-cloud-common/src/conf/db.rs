@@ -7,7 +7,6 @@ pub struct DatabaseConfig {
     user: Option<String>,
     password: Option<String>,
     database: Option<String>,
-    schema: Option<String>,
 }
 
 impl DatabaseConfig {
@@ -16,22 +15,18 @@ impl DatabaseConfig {
     }
 
     pub fn port(&self) -> u16 {
-        self.port.unwrap_or(5432)
+        self.port.unwrap_or(3306)
     }
 
     pub fn user(&self) -> &str {
-        self.user.as_deref().unwrap_or("postgres")
+        self.user.as_deref().unwrap_or("root")
     }
 
     pub fn password(&self) -> &str {
-        self.password.as_deref().unwrap_or("postgres")
+        self.password.as_deref().unwrap_or("root")
     }
 
     pub fn database(&self) -> &str {
-        self.database.as_deref().unwrap_or("postgres")
-    }
-
-    pub fn schema(&self) -> &str {
-        self.schema.as_deref().unwrap_or("public")
+        self.database.as_deref().unwrap_or("daoyi_cloud")
     }
 }

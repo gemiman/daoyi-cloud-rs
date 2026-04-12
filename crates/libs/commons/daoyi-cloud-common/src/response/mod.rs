@@ -1,14 +1,15 @@
-use crate::error::ApiResult;
-use axum::response::{IntoResponse, Response};
+use salvo::oapi::ToSchema;
+use salvo::prelude::*;
+use salvo::writing::Json;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
 
-pub type CommonResult<T> = ApiResult<ApiResponse<T>>;
+use crate::error::ApiError;
+
+pub type CommonResult<T> = Result<ApiResponse<T>, ApiError>;
 
 /// 统一 API 响应结构
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
-#[schema(title = "ApiResponse", description = "统一 API 响应结构")]
-pub struct ApiResponse<T: Serialize + utoipa::ToSchema> {
+pub struct ApiResponse<T: Serialize + ToSchema + Send> {
     /// 状态码，0 表示成功
     pub code: i32,
     /// 提示信息
@@ -18,7 +19,7 @@ pub struct ApiResponse<T: Serialize + utoipa::ToSchema> {
     pub data: Option<T>,
 }
 
-impl<T: Serialize + utoipa::ToSchema> ApiResponse<T> {
+impl<T: Serialize + ToSchema + Send> ApiResponse<T> {
     pub fn new<M: AsRef<str>>(code: i32, msg: M, data: Option<T>) -> Self {
         Self {
             code,
@@ -28,7 +29,7 @@ impl<T: Serialize + utoipa::ToSchema> ApiResponse<T> {
     }
 
     pub fn ok(data: Option<T>) -> Self {
-        Self::new(0, "".to_string(), data)
+        Self::new(0, "", data)
     }
 
     pub fn err<M: AsRef<str>>(code: i32, msg: M) -> Self {
@@ -44,22 +45,33 @@ impl<T: Serialize + utoipa::ToSchema> ApiResponse<T> {
     }
 }
 
-impl<T: Serialize + utoipa::ToSchema> IntoResponse for ApiResponse<T> {
-    fn into_response(self) -> Response {
-        axum::Json(self).into_response()
-    }
+/// 将 ApiResponse 写入 salvo Response
+pub fn write_json_response<T: Serialize + ToSchema + Send>(
+    res: &mut Response,
+    data: ApiResponse<T>,
+) {
+    res.status_code(StatusCode::OK);
+    res.render(Json(data));
+}
+
+/// 将 ApiError 写入 salvo Response
+pub fn write_error_response(res: &mut Response, error: ApiError) {
+    let status = error.status_code();
+    let body = ApiResponse::<()>::err_msg(error.to_string());
+    res.status_code(status);
+    res.render(Json(body));
 }
 
 #[macro_export]
 macro_rules! success {
-    ($data:expr) => {
-        $crate::response::_inner_success(Some($data))
+    ($res:expr, $data:expr) => {
+        $crate::response::write_json_response($res, $crate::response::ApiResponse::ok(Some($data)))
     };
-    () => {
-        $crate::response::_inner_success(None::<()>)
+    ($res:expr) => {
+        $crate::response::write_json_response($res, $crate::response::ApiResponse::<()>::ok(None))
     };
 }
 
-pub fn _inner_success<T: Serialize + utoipa::ToSchema>(data: Option<T>) -> CommonResult<T> {
+pub fn _inner_success<T: Serialize + ToSchema + Send>(data: Option<T>) -> CommonResult<T> {
     Ok(ApiResponse::ok(data))
 }

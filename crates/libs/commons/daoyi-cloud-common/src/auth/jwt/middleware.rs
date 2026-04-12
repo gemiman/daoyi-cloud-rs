@@ -1,69 +1,101 @@
-use crate::auth::jwt::{JWT, default_jwt};
+use crate::auth::jwt::{Principal, default_jwt};
 use crate::conf;
 use crate::error::ApiError;
-use axum::body::Body;
-use axum::http::{Request, Response, header};
-use std::pin::Pin;
+use crate::response::ApiResponse;
+use salvo::http::StatusCode;
+use salvo::http::header::AUTHORIZATION;
+use salvo::prelude::*;
+use salvo::writing::Json;
 use std::sync::LazyLock;
-use tower_http::auth::{AsyncAuthorizeRequest, AsyncRequireAuthorizationLayer};
 
-static AUTH_LAYER: LazyLock<AsyncRequireAuthorizationLayer<JWTAuth>> =
-    LazyLock::new(|| AsyncRequireAuthorizationLayer::new(JWTAuth::new(default_jwt())));
+/// JWT 认证中间件
+#[derive(Clone)]
+pub struct JwtAuthHandler;
 
-#[derive(Debug, Clone)]
-pub struct JWTAuth {
-    jwt: &'static JWT,
-}
-
-impl JWTAuth {
-    pub fn new(jwt: &'static JWT) -> Self {
-        Self { jwt }
-    }
-}
-
-impl AsyncAuthorizeRequest<Body> for JWTAuth {
-    type RequestBody = Body;
-    type ResponseBody = Body;
-    type Future = Pin<
-        Box<
-            dyn Future<Output = Result<Request<Self::RequestBody>, Response<Self::ResponseBody>>>
-                + Send,
-        >,
-    >;
-
-    fn authorize(&mut self, mut request: Request<Body>) -> Self::Future {
-        let jwt = self.jwt;
-        Box::pin(async move {
-            let path = request.uri().path();
-            if conf::get().auth().ignored(path)? {
-                return Ok(request);
+#[handler]
+impl JwtAuthHandler {
+    async fn handle(
+        &self,
+        req: &mut Request,
+        _depot: &mut Depot,
+        res: &mut Response,
+        ctrl: &mut FlowCtrl,
+    ) {
+        let path = req.uri().path();
+        match conf::get().auth().ignored(path) {
+            Ok(true) => {
+                return;
             }
-            let token = request
-                .headers()
-                .get(header::AUTHORIZATION)
-                .map(|value| -> Result<_, ApiError> {
-                    let token = value
-                        .to_str()
-                        .map_err(|_| {
-                            ApiError::Unauthenticated(String::from("Authorization请求头无效"))
-                        })?
-                        .strip_prefix("Bearer ")
-                        .ok_or_else(|| {
-                            ApiError::Unauthenticated(String::from("Authorization请求头格式无效"))
-                        })?;
-                    Ok(token)
-                })
-                .transpose()?
-                .ok_or_else(|| {
-                    ApiError::Unauthenticated(String::from("Authorization请求头缺失"))
-                })?;
-            let principal = jwt.decode(token).map_err(|err| ApiError::Internal(err))?;
-            request.extensions_mut().insert(principal);
-            Ok(request)
-        })
+            Ok(false) => {}
+            Err(e) => {
+                res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
+                res.render(Json(ApiResponse::<()>::err_msg(e.to_string())));
+                ctrl.skip_rest();
+                return;
+            }
+        }
+
+        let token = req
+            .headers()
+            .get(AUTHORIZATION)
+            .map(|value| -> Result<_, ApiError> {
+                let token = value
+                    .to_str()
+                    .map_err(|_| {
+                        ApiError::Unauthenticated(String::from("Authorization请求头无效"))
+                    })?
+                    .strip_prefix("Bearer ")
+                    .ok_or_else(|| {
+                        ApiError::Unauthenticated(String::from("Authorization请求头格式无效"))
+                    })?;
+                Ok(token)
+            })
+            .transpose();
+
+        match token {
+            Ok(Some(t)) => match default_jwt().decode(t) {
+                Ok(principal) => {
+                    req.extensions_mut().insert(principal);
+                }
+                Err(err) => {
+                    res.status_code(StatusCode::UNAUTHORIZED);
+                    res.render(Json(ApiResponse::<()>::err_msg(err.to_string())));
+                    ctrl.skip_rest();
+                    return;
+                }
+            },
+            Ok(None) => {
+                res.status_code(StatusCode::UNAUTHORIZED);
+                res.render(Json(ApiResponse::<()>::err_msg("Authorization请求头缺失")));
+                ctrl.skip_rest();
+                return;
+            }
+            Err(e) => {
+                res.status_code(StatusCode::UNAUTHORIZED);
+                res.render(Json(ApiResponse::<()>::err_msg(e.to_string())));
+                ctrl.skip_rest();
+                return;
+            }
+        }
     }
 }
 
-pub fn get_auth_layer() -> &'static AsyncRequireAuthorizationLayer<JWTAuth> {
-    &AUTH_LAYER
+static JWT_AUTH_HANDLER: LazyLock<JwtAuthHandler> = LazyLock::new(JwtAuthHandler::new);
+
+impl JwtAuthHandler {
+    pub fn new() -> Self {
+        Self
+    }
+
+    pub fn get() -> &'static JwtAuthHandler {
+        &JWT_AUTH_HANDLER
+    }
+}
+
+/// 从 Request extensions 中提取 Principal
+pub fn extract_principal(req: &Request) -> Result<Principal, ApiError> {
+    req.extensions()
+        .get::<Principal>()
+        .cloned()
+        .ok_or_else(|| ApiError::Unauthenticated(String::from("未找到认证信息")))
 }
