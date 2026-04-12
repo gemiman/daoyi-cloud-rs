@@ -3,8 +3,7 @@ use daoyi_cloud_common::constants::default_values::{
     default_page_no, default_page_size, default_true,
 };
 use daoyi_cloud_common::constants::enumeration::Gender;
-use daoyi_cloud_common::extract::validations::validate_mobile_phone;
-use daoyi_cloud_common::extract::validations::validate_page_size;
+use daoyi_cloud_common::extract::validations::{validate_mobile_phone, validate_page_size};
 use daoyi_cloud_common::pojo::pagination::PageParam;
 use daoyi_cloud_common::utils::serde_utils::deserialize_number;
 use salvo::oapi::{ToParameters, ToSchema};
@@ -31,7 +30,7 @@ pub struct UserQueryParams {
 }
 
 impl UserQueryParams {
-    pub fn into_page_param(self) -> PageParam {
+    pub fn pagination(&self) -> PageParam {
         PageParam::new(self.page_no, self.page_size)
     }
 }

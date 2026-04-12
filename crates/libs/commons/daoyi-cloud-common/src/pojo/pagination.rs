@@ -2,13 +2,14 @@ use crate::constants::default_values::default_page_no;
 use crate::constants::default_values::default_page_size;
 use crate::extract::validations::validate_page_size;
 use crate::utils::serde_utils::deserialize_number;
-use salvo::oapi::ToSchema;
+use salvo::oapi::{ToParameters, ToSchema};
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
 /// 分页查询参数
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Validate, ToSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Validate, ToSchema, ToParameters)]
 #[serde(rename_all = "camelCase")]
+#[salvo(parameters(default_parameter_in = Query))]
 pub struct PageParam {
     /// 页码
     #[validate(range(min = 1, message = "页码最小值为 1"))]
