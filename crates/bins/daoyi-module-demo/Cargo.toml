@@ -3,10 +3,14 @@ name = "daoyi-module-demo"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description.workspace = true
-license-file.workspace = true
+description = "Demo business API module for daoyi-cloud-rs (can be deployed independently)"
+license.workspace = true
+repository.workspace = true
 readme.workspace = true
 authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
+publish = false
 
 [dependencies]
 axum.workspace = true

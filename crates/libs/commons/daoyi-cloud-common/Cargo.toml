@@ -3,10 +3,13 @@ name = "daoyi-cloud-common"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
-description.workspace = true
-license-file.workspace = true
+description = "Common infrastructure library for daoyi-cloud-rs: JWT auth, error handling, pagination, validation, OpenAPI docs, and more"
+license.workspace = true
+repository.workspace = true
 readme.workspace = true
 authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 anyhow.workspace = true

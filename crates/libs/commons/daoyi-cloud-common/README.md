@@ -1,38 +1,101 @@
+# daoyi-cloud-common
+
+daoyi-cloud-rs 项目的公共基础库，封装了 Web 服务开发中常用的基础设施能力，供所有业务模块复用。
+
+## 模块概览
+
+| 模块          | 说明                                                  |
+|-------------|-----------------------------------------------------|
+| `app`       | 应用启动器，串联配置加载、日志初始化、数据库连接、HTTP 服务器启动                 |
+| `auth`      | JWT 认证（编解码 + 中间件）                                   |
+| `conf`      | 全局配置管理（YAML + 环境变量覆盖，OnceCell 单例）                   |
+| `constants` | 常量定义（默认值、全局值、枚举）                                    |
+| `db`        | 数据库连接池管理（SeaORM + PostgreSQL）                       |
+| `error`     | 统一错误类型 `ApiError`，自动映射 HTTP 状态码                     |
+| `extract`   | Axum 参数提取器（ValidJson / ValidQuery / ValidPath，自动校验） |
+| `logger`    | 日志初始化（tracing + chrono 时间格式）                        |
+| `openapi`   | OpenAPI 文档配置（JWT Bearer 安全方案）                       |
+| `pojo`      | 通用 POJO（分页参数 PageParam / 分页结果 PageResult）           |
+| `response`  | 统一 API 响应结构 ApiResponse + `success!` 宏              |
+| `server`    | HTTP 服务器（Axum + 中间件栈 + Swagger UI + Scalar）         |
+| `utils`     | 工具类（ID 生成、密码加密、序列化）                                 |
+
+## 核心特性
+
+### 统一错误处理
+
+`ApiError` 枚举覆盖了 Web 开发中常见的错误场景，自动映射为合适的 HTTP 状态码：
+
+| 变体                   | HTTP 状态码 |
+|----------------------|----------|
+| `NotFound`           | 404      |
+| `MethodNotAllowed`   | 405      |
+| `Unauthenticated`    | 401      |
+| `Validation`         | 422      |
+| `Biz`                | 400      |
+| `DbErr` / `Internal` | 500      |
+
+### 参数校验提取器
+
+提供 `ValidJson<T>`、`ValidQuery<T>`、`ValidPath<T>` 三个提取器，在提取参数的同时自动执行 `validator` 校验，校验失败直接返回
+`ApiError::Validation`：
+
 ```rust
-impl<S, T> FromRequestParts<S> for ValidQuery<T>
-where
-    S: Send + Sync,
-    Valid<Query<T>>: FromRequestParts<S, Rejection=ApiError>,
-{
-    type Rejection = ApiError;
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        Ok(ValidQuery(
-            Valid::from_request_parts(parts, state).await?.0.0,
-        ))
-    }
+async fn create(ValidJson(params): ValidJson<UserParams>) -> CommonResult<User> {
+    // params 已通过校验，可直接使用
 }
+```
 
-impl<S, T> FromRequest<S> for ValidJson<T>
-where
-    S: Send + Sync,
-    Valid<Json<T>>: FromRequest<S, Rejection=ApiError>,
-{
-    type Rejection = ApiError;
-    async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
-        Ok(ValidJson(Valid::from_request(request, state).await?.0.0))
-    }
-}
+### JWT 认证
 
-impl<S, T> FromRequestParts<S> for ValidPath<T>
-where
-    S: Send + Sync,
-    Valid<Path<T>>: FromRequestParts<S, Rejection=ApiError>,
+- HS256 算法签发/验证 Token
+- 中间件自动从 `Authorization: Bearer <token>` 提取并校验
+- 支持通过配置忽略指定 URL（Glob 模式匹配）
+- 校验成功后将 `Principal` 注入请求扩展
+
+### 统一响应
+
+所有接口返回 `ApiResponse<T>` 结构：
+
+```json
 {
-    type Rejection = ApiError;
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        Ok(ValidPath(
-            Valid::from_request_parts(parts, state).await?.0.0,
-        ))
-    }
+  "code": 0,
+  "msg": "",
+  "data": {}
 }
+```
+
+配合 `success!` 宏简化使用：
+
+```rust
+success!(result)   // ApiResult<ApiResponse<T>>
+success!()         // 无数据返回
+```
+
+### 分页
+
+`PageParam` 支持页码/每页条数校验，`PageResult<T>` 泛型分页结果：
+
+```rust
+let page = PageResult::from_pagination(params.pagination, total, list);
+```
+
+### API 文档
+
+自动集成 Swagger UI 和 Scalar 两套 API 文档界面，共享同一份 OpenAPI 规范。
+
+## 依赖关系
+
+```
+daoyi-cloud-common
+  ├── axum (Web 框架)
+  ├── sea-orm (ORM)
+  ├── utoipa + utoipa-swagger-ui + utoipa-scalar (API 文档)
+  ├── jsonwebtoken (JWT)
+  ├── bcrypt (密码加密)
+  ├── validator + axum-valid (参数校验)
+  ├── tracing + tracing-subscriber (日志)
+  ├── tower-http (中间件)
+  ├── config (配置管理)
+  └── idgenerator + xid (ID 生成)
 ```
