@@ -60,3 +60,4 @@ jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 wax = { version = "0.7.0" }
 utoipa = { version = "5", features = ["axum_extras", "chrono", "decimal_float"] }
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
+utoipa-scalar = { version = "0.3", features = ["axum"] }

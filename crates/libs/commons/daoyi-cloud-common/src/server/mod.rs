@@ -20,6 +20,7 @@ use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 use utoipa::openapi::OpenApi;
+use utoipa_scalar::{Scalar, Servable};
 use utoipa_swagger_ui::SwaggerUi;
 
 pub struct Server {
@@ -46,6 +47,12 @@ impl Server {
             "http",
             listener.local_addr()?,
             "/swagger-ui/"
+        );
+        tracing::info!(
+            "Scalar: {}://{}{}",
+            "http",
+            listener.local_addr()?,
+            "/scalar"
         );
         axum::serve(
             listener,
@@ -78,7 +85,8 @@ impl Server {
         let normalize_path = NormalizePathLayer::trim_trailing_slash();
         Router::new()
             .route("/", routing::get(index))
-            .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api))
+            .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api.clone()))
+            .merge(Scalar::with_url("/scalar", api))
             .merge(router)
             .layer(timeout)
             .layer(body_limit)
