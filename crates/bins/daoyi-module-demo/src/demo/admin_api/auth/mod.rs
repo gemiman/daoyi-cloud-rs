@@ -29,9 +29,13 @@ pub fn create_router() -> (Router<AppState>, OpenApi) {
 #[utoipa::path(
     post,
     path = "/admin-api/demo/auth/login",
+    tag = "认证管理",
+    operation_id = "login",
+    summary = "用户登录",
+    description = "通过账号密码登录系统，返回 JWT 访问令牌",
     request_body = LoginParams,
     responses(
-        (status = 200, description = "Login successful", body = ApiResponse<LoginResult>),
+        (status = 200, description = "登录成功，返回访问令牌", body = ApiResponse<LoginResult>),
     ),
     security(())
 )]
@@ -54,8 +58,12 @@ async fn login(
 #[utoipa::path(
     get,
     path = "/admin-api/demo/auth/user-info",
+    tag = "认证管理",
+    operation_id = "getUserInfo",
+    summary = "获取当前用户信息",
+    description = "根据 JWT 令牌获取当前登录用户的基本信息",
     responses(
-        (status = 200, description = "Get current user info", body = ApiResponse<Principal>),
+        (status = 200, description = "获取成功，返回用户信息", body = ApiResponse<Principal>),
     ),
 )]
 #[debug_handler]

@@ -36,9 +36,13 @@ pub fn create_router() -> (Router<AppState>, OpenApi) {
 #[utoipa::path(
     delete,
     path = "/admin-api/demo/users/{id}",
-    params(("id" = String, Path, description = "User ID")),
+    tag = "用户管理",
+    operation_id = "deleteUser",
+    summary = "删除用户",
+    description = "根据用户ID删除指定用户",
+    params(("id" = String, Path, description = "用户ID")),
     responses(
-        (status = 200, description = "Delete user successfully", body = ApiResponse<bool>),
+        (status = 200, description = "删除成功", body = ApiResponse<bool>),
     ),
 )]
 #[debug_handler]
@@ -50,9 +54,13 @@ async fn delete(Path(id): Path<String>) -> CommonResult<bool> {
 #[utoipa::path(
     get,
     path = "/admin-api/demo/users/{id}",
-    params(("id" = String, Path, description = "User ID")),
+    tag = "用户管理",
+    operation_id = "getUserById",
+    summary = "根据ID查询用户",
+    description = "根据用户ID获取用户详细信息",
+    params(("id" = String, Path, description = "用户ID")),
     responses(
-        (status = 200, description = "Get user by ID", body = ApiResponse<sys_user::Model>),
+        (status = 200, description = "查询成功，返回用户信息", body = ApiResponse<sys_user::Model>),
     ),
 )]
 #[debug_handler]
@@ -64,10 +72,14 @@ async fn get_user_by_id(Path(id): Path<String>) -> CommonResult<Option<sys_user:
 #[utoipa::path(
     put,
     path = "/admin-api/demo/users/{id}",
-    params(("id" = String, Path, description = "User ID")),
+    tag = "用户管理",
+    operation_id = "updateUser",
+    summary = "更新用户",
+    description = "根据用户ID更新用户信息",
+    params(("id" = String, Path, description = "用户ID")),
     request_body = UserParams,
     responses(
-        (status = 200, description = "Update user successfully", body = ApiResponse<bool>),
+        (status = 200, description = "更新成功", body = ApiResponse<bool>),
     ),
 )]
 #[debug_handler]
@@ -82,9 +94,13 @@ async fn update(
 #[utoipa::path(
     post,
     path = "/admin-api/demo/users",
+    tag = "用户管理",
+    operation_id = "createUser",
+    summary = "创建用户",
+    description = "创建新用户",
     request_body = UserParams,
     responses(
-        (status = 200, description = "Create user successfully", body = ApiResponse<sys_user::Model>),
+        (status = 200, description = "创建成功，返回用户信息", body = ApiResponse<sys_user::Model>),
     ),
 )]
 #[debug_handler]
@@ -96,9 +112,13 @@ async fn create(ValidJson(params): ValidJson<UserParams>) -> CommonResult<sys_us
 #[utoipa::path(
     get,
     path = "/admin-api/demo/users/page",
+    tag = "用户管理",
+    operation_id = "findUserPage",
+    summary = "分页查询用户",
+    description = "根据关键词和分页参数分页查询用户列表",
     params(UserQueryParams),
     responses(
-        (status = 200, description = "Query users by page", body = ApiResponse<PageResult<sys_user::Model>>),
+        (status = 200, description = "查询成功，返回分页结果", body = ApiResponse<PageResult<sys_user::Model>>),
     ),
 )]
 #[debug_handler]
@@ -112,8 +132,12 @@ async fn find_page(
 #[utoipa::path(
     get,
     path = "/admin-api/demo/users",
+    tag = "用户管理",
+    operation_id = "queryUsers",
+    summary = "查询所有用户",
+    description = "查询系统中所有用户列表",
     responses(
-        (status = 200, description = "Query all users", body = ApiResponse<Vec<sys_user::Model>>),
+        (status = 200, description = "查询成功，返回用户列表", body = ApiResponse<Vec<sys_user::Model>>),
     ),
 )]
 #[debug_handler]
