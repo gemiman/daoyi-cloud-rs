@@ -45,7 +45,7 @@ impl AppServer {
                     .into_router("/swagger-ui"),
             )
             .push(Scalar::new("/api-docs/openapi.json").into_router("/scalar"))
-            .push(Router::with_path("/").get(index))
+            .push(Router::new().get(index))
             .hoop(TrailingSlash::new(TrailingSlashAction::Remove));
 
         // CORS 必须加到 Service 级别
@@ -64,7 +64,7 @@ impl AppServer {
         tracing::info!("Swagger UI: http://localhost:{}/swagger-ui", port);
         tracing::info!("Scalar: http://localhost:{}/scalar", port);
 
-        salvo::Server::new(listener).serve(service).await;
+        Server::new(listener).serve(service).await;
         Ok(())
     }
 }

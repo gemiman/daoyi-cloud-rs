@@ -20,6 +20,12 @@ pub struct PageParam {
     pub page_size: u64,
 }
 
+impl PageParam {
+    pub fn new(page_no: u64, page_size: u64) -> Self {
+        Self { page_no, page_size }
+    }
+}
+
 /// 分页查询结果
 #[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]

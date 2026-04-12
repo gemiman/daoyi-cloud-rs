@@ -10,6 +10,8 @@ use sea_orm::{ActiveValue, Condition, ExprTrait, IntoActiveModel, QueryOrder, Qu
 
 pub async fn query_page(params: UserQueryParams) -> ApiResult<PageResult<sys_user::Model>> {
     let dc = db::get();
+    let page_no = params.page_no;
+    let page_size = params.page_size;
     let paginator = SysUser::find()
         .apply_if(params.keyword.as_ref(), |query, keyword| {
             query.filter(
@@ -19,10 +21,10 @@ pub async fn query_page(params: UserQueryParams) -> ApiResult<PageResult<sys_use
             )
         })
         .order_by_desc(sys_user::Column::CreatedAt)
-        .paginate(dc, params.pagination.page_size);
+        .paginate(dc, page_size);
     let total = paginator.num_items().await?;
-    let items = paginator.fetch_page(params.pagination.page_no - 1).await?;
-    let result = PageResult::from_pagination(params.pagination, total, items);
+    let items = paginator.fetch_page(page_no - 1).await?;
+    let result = PageResult::new(page_no, page_size, total, items);
     Ok(result)
 }
 

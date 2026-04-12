@@ -9,9 +9,9 @@ use salvo::prelude::*;
 
 pub fn create_router() -> Router {
     Router::new()
-        .push(Router::with_path("/").get(query_users))
+        .push(Router::new().get(query_users))
         .push(Router::with_path("/page").get(find_page))
-        .push(Router::with_path("/").post(create))
+        .push(Router::new().post(create))
         .push(Router::with_path("/<id>").put(update))
         .push(Router::with_path("/<id>").get(get_user_by_id))
         .push(Router::with_path("/<id>").delete(delete))
@@ -124,12 +124,9 @@ async fn create(req: &mut Request, depot: &mut Depot, res: &mut Response) {
         (status_code = 200, description = "查询成功，返回分页结果", body = ApiResponse<PageResult<SysUser>>)
     )
 )]
-async fn find_page(req: &mut Request, depot: &mut Depot, res: &mut Response) {
-    match extract::extract_valid_query::<UserQueryParams>(req, depot).await {
-        Ok(params) => match sys_user_service::query_page(params).await {
-            Ok(users) => daoyi_cloud_common::success!(res, users),
-            Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
-        },
+async fn find_page(params: UserQueryParams, res: &mut Response) {
+    match sys_user_service::query_page(params).await {
+        Ok(users) => daoyi_cloud_common::success!(res, users),
         Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
     }
 }
