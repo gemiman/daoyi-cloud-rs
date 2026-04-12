@@ -3,6 +3,7 @@ pub mod latency;
 use crate::conf::ServerConfig;
 use salvo::cors::{Any, Cors};
 use salvo::oapi::OpenApi;
+use salvo::oapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
 use salvo::prelude::*;
 use salvo::trailing_slash::{TrailingSlash, TrailingSlashAction};
 use salvo_oapi::scalar::Scalar;
@@ -22,7 +23,19 @@ impl AppServer {
         let port = self.config.port();
 
         // 创建 OpenAPI 文档
-        let doc = OpenApi::new("DaoYi Cloud API", "0.9.0").merge_router(&router);
+        let doc = OpenApi::new("DaoYi Cloud API", "0.9.0")
+            .add_security_scheme(
+                "bearer_auth",
+                SecurityScheme::Http(Http::new(HttpAuthScheme::Bearer).bearer_format("JWT")),
+            )
+            .add_security_scheme(
+                "tenant_id",
+                SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::with_description(
+                    "tenant-id",
+                    "租户ID",
+                ))),
+            )
+            .merge_router(&router);
 
         let router = router
             .push(doc.into_router("/api-docs/openapi.json"))
