@@ -14,7 +14,7 @@ RUST_LOG=DEBUG cargo run
 
 ## API 接口
 
-所有接口前缀为 `/admin-api/demo`，除登录外均需 JWT 认证。
+所有接口前缀为 `/admin-api/demo`，除登录外均需 JWT 认证（Bearer Token + tenant-id 请求头）。
 
 ### 认证管理
 
@@ -41,7 +41,7 @@ src/
 ├── main.rs                # 独立启动入口
 ├── lib.rs                 # 库入口
 └── demo/
-    ├── mod.rs             # Demo 路由定义（JWT 中间件 + 子路由聚合）
+    ├── mod.rs             # Demo 路由定义（JWT 中间件 + 安全方案 + 子路由聚合）
     └── admin_api/
         ├── mod.rs         # Admin API 路由聚合 + OpenAPI 合并
         ├── auth/
@@ -53,7 +53,7 @@ src/
 ## 路由架构
 
 ```
-/admin-api                          ← JWT 认证中间件
+/admin-api                          ← JWT 认证中间件 + OpenAPI 安全方案（bearer_auth + tenant_id）
   /demo
     /auth
       POST /login                   ← 忽略 JWT 校验
@@ -67,7 +67,7 @@ src/
       DELETE /{id}
 ```
 
-每个子模块返回 `(Router<AppState>, OpenApi)` 元组，父模块合并路由和 OpenAPI 规范，最终统一注册到 HTTP 服务器。
+每个子模块返回 `Router`，通过 `#[endpoint]` 宏声明路由和 OpenAPI 文档信息，父模块合并路由，最终统一注册到 HTTP 服务器。
 
 ## 依赖关系
 
@@ -75,5 +75,5 @@ src/
 daoyi-module-demo
   ├── daoyi-cloud-common    # 公共基础（AppState、提取器、响应、JWT 等）
   ├── daoyi-entity-demo     # 实体、模型、服务
-  └── utoipa                # OpenAPI 路径注解
+  └── salvo-oapi            # OpenAPI 路径注解
 ```

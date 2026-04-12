@@ -1,22 +1,22 @@
 # daoyi-cloud-rs
 
-基于 Rust 的云原生微服务脚手架，采用 Axum + SeaORM + PostgreSQL 技术栈，支持模块化单体与微服务两种部署模式。
+基于 Rust 的云原生微服务脚手架，采用 Salvo + SeaORM + MySQL 技术栈，支持模块化单体与微服务两种部署模式。
 
 ## 技术栈
 
-| 类别     | 技术                           | 版本              |
-|--------|------------------------------|-----------------|
-| Web 框架 | Axum                         | 0.8             |
-| 异步运行时  | Tokio                        | 1               |
-| ORM    | SeaORM                       | 2.0             |
-| 数据库    | PostgreSQL                   | -               |
-| API 文档 | utoipa + Swagger UI + Scalar | 5 / 9 / 0.3     |
-| 认证     | JWT (HS256)                  | jsonwebtoken 10 |
-| 密码加密   | bcrypt                       | 0.19            |
-| 配置管理   | config (YAML + 环境变量)         | 0.15            |
-| 日志     | tracing + tracing-subscriber | 0.1 / 0.3       |
-| 参数校验   | validator + axum-valid       | 0.20 / 0.24     |
-| ID 生成  | 雪花算法 + XID                   | -               |
+| 类别     | 技术                               | 版本              |
+|--------|----------------------------------|-----------------|
+| Web 框架 | Salvo                            | 0.91            |
+| 异步运行时  | Tokio                            | 1               |
+| ORM    | SeaORM                           | 2.0             |
+| 数据库    | MySQL                            | -               |
+| API 文档 | salvo-oapi + Swagger UI + Scalar | 0.91            |
+| 认证     | JWT (HS256)                      | jsonwebtoken 10 |
+| 密码加密   | bcrypt                           | 0.19            |
+| 配置管理   | config (YAML + 环境变量)             | 0.15            |
+| 日志     | tracing + tracing-subscriber     | 0.1 / 0.3       |
+| 参数校验   | validator                        | 0.20            |
+| ID 生成  | 雪花算法 + XID                       | -               |
 
 ## 项目结构
 
@@ -43,13 +43,13 @@ daoyi-cloud-rs/                      # 主应用（聚合模式入口）
 ### 环境要求
 
 - Rust 1.94+
-- PostgreSQL
+- MySQL
 
 ### 初始化数据库
 
 ```shell
 # 执行 Schema 初始化
-psql -U postgres -f docs/db/demo/schema.sql
+mysql -u root -p < docs/db/demo/schema.sql
 ```
 
 ### 启动服务
@@ -66,10 +66,10 @@ RUST_LOG=DEBUG cargo run -p daoyi-module-demo
 
 启动后访问：
 
-| UI         | 地址                                    |
-|------------|---------------------------------------|
-| Swagger UI | `http://localhost:{port}/swagger-ui/` |
-| Scalar     | `http://localhost:{port}/scalar`      |
+| UI         | 地址                                   |
+|------------|--------------------------------------|
+| Swagger UI | `http://localhost:{port}/swagger-ui` |
+| Scalar     | `http://localhost:{port}/scalar`     |
 
 ## 开发指南
 
@@ -82,6 +82,7 @@ cargo install sea-orm-cli@^2.0.0-rc
 # 生成 entity（在 daoyi-entity-demo 目录下执行）
 cd crates/libs/entities/daoyi-entity-demo
 sea-orm-cli generate entity \
+  -u mysql://root:123456@127.0.0.1:3306/demo \
   -s demo \
   --with-serde both \
   --model-extra-attributes 'serde(rename_all = "camelCase")' \
@@ -105,7 +106,7 @@ cargo upgrade
 cargo upgrade -i
 
 # 指定包升级
-cargo upgrade -p axum
+cargo upgrade -p salvo
 
 # 排除包
 cargo upgrade -i --exclude sea-orm
@@ -121,8 +122,15 @@ cargo upgrade -i --exclude sea-orm
 ### 请求处理流程
 
 ```
-Request → CORS → Tracing → Timeout → BodyLimit → NormalizePath → JWT Auth → Handler → Response
+Request → CORS → TrailingSlash → JWT Auth → Handler → Response
 ```
+
+### OpenAPI 安全头
+
+| 安全方案        | 类型           | 请求头           | 说明       |
+|-------------|--------------|---------------|----------|
+| bearer_auth | Http(Bearer) | Authorization | JWT 认证令牌 |
+| tenant_id   | ApiKey       | tenant-id     | 租户ID     |
 
 ### 统一响应格式
 
@@ -149,7 +157,7 @@ Request → CORS → Tracing → Timeout → BodyLimit → NormalizePath → JWT
 ```
 
 ```shell
-git push origin master   # 推送到 Gitee + GitHub
+git push origin salvo   # 推送到 Gitee + GitHub
 ```
 
 ## 生产环境构建
@@ -235,7 +243,7 @@ cargo publish
 git add -A
 git commit -m "release v0.9.1"
 git tag v0.9.1
-git push origin master --tags
+git push origin salvo --tags
 
 # 3. 按顺序发布
 cd crates/libs/commons/daoyi-cloud-common && cargo publish

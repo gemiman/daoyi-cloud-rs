@@ -34,7 +34,7 @@ src/demo/
 
 ### Model 层
 
-定义 API 接口的请求参数和响应模型，集成 `validator` 校验和 `utoipa::ToSchema` 文档生成：
+定义 API 接口的请求参数和响应模型，集成 `validator` 校验和 `salvo_oapi::ToSchema` 文档生成：
 
 | 模型                | 用途      | 校验规则                                          |
 |-------------------|---------|-----------------------------------------------|
@@ -52,7 +52,7 @@ src/demo/
 | `auth_service`     | `login`             | 查账号 → 检查启用 → 验证密码 → 生成 JWT |
 | `sys_user_service` | `query_page`        | 关键词 + 分页查询                 |
 |                    | `query_users`       | 组合条件查询全部                   |
-|                    | `create_user`       | 自动生成 ID + 密码哈希             |
+|                    | `create_user`       | 自动递增 ID + 密码哈希             |
 |                    | `update_user_by_id` | 密码为空则不更新                   |
 |                    | `get_user_by_id`    | 按 ID 查询                    |
 |                    | `delete_user_by_id` | 按 ID 删除                    |
@@ -65,6 +65,7 @@ src/demo/
 cd crates/libs/entities/daoyi-entity-demo
 
 sea-orm-cli generate entity \
+  -u mysql://root:123456@127.0.0.1:3306/demo \
   -s demo \
   --with-serde both \
   --model-extra-attributes 'serde(rename_all = "camelCase")' \
@@ -80,6 +81,6 @@ daoyi-entity-demo
   ├── sea-orm               # ORM 核心
   ├── serde                 # 序列化/反序列化
   ├── validator             # 参数校验
-  ├── utoipa                # OpenAPI Schema 生成
+  ├── salvo-oapi            # OpenAPI Schema 生成
   └── bcrypt                # 密码哈希（auth_service 使用）
 ```
