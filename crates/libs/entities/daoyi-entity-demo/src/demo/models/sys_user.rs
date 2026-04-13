@@ -1,37 +1,19 @@
 use crate::demo::entity::sys_user::ActiveModel;
-use daoyi_cloud_common::constants::default_values::{
-    default_page_no, default_page_size, default_true,
-};
+use daoyi_cloud_common::constants::default_values::default_true;
 use daoyi_cloud_common::constants::enumeration::Gender;
-use daoyi_cloud_common::extract::validations::{validate_mobile_phone, validate_page_size};
-use daoyi_cloud_common::pojo::pagination::PageParam;
-use daoyi_cloud_common::utils::serde_utils::deserialize_number;
-use salvo::oapi::{ToParameters, ToSchema};
+use daoyi_cloud_common::extract::validations::validate_mobile_phone;
+use daoyi_cloud_common::page_query_params;
+use salvo::oapi::ToSchema;
 use sea_orm::DeriveIntoActiveModel;
 use sea_orm::prelude::Date;
 use serde::Deserialize;
 use validator::Validate;
 
-/// 用户查询参数
-#[derive(Debug, Deserialize, Validate, ToParameters, ToSchema)]
-#[serde(rename_all = "camelCase")]
-#[salvo(parameters(default_parameter_in = Query))]
-pub struct UserQueryParams {
-    /// 搜索关键词
-    pub keyword: Option<String>,
-    /// 页码
-    #[validate(range(min = 1, message = "页码最小值为 1"))]
-    #[serde(default = "default_page_no", deserialize_with = "deserialize_number")]
-    pub page_no: u64,
-    /// 每页条数
-    #[validate(custom(function = "validate_page_size"))]
-    #[serde(default = "default_page_size", deserialize_with = "deserialize_number")]
-    pub page_size: u64,
-}
-
-impl UserQueryParams {
-    pub fn pagination(&self) -> PageParam {
-        PageParam::new(self.page_no, self.page_size)
+page_query_params! {
+    /// 用户查询参数
+    pub struct UserQueryParams {
+        /// 搜索关键词
+        pub keyword: Option<String>,
     }
 }
 
