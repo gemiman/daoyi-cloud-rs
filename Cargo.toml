@@ -24,7 +24,6 @@ members = [
     "crates/libs/commons/*",
     "crates/libs/entities/*",
     "crates/bins/*",
-    "crates/study/*"
 ]
 resolver = "2"
 
