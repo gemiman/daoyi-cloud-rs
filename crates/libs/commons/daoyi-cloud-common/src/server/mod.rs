@@ -8,15 +8,38 @@ use salvo::prelude::*;
 use salvo::trailing_slash::{TrailingSlash, TrailingSlashAction};
 use salvo_oapi::scalar::Scalar;
 use salvo_oapi::swagger_ui::SwaggerUi;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
+
+const GRACEFUL_SHUTDOWN_TIMEOUT_SECS: u64 = 30;
 
 pub struct AppServer {
     config: &'static ServerConfig,
+    shutdown_flag: Arc<AtomicBool>,
+}
+
+impl Clone for AppServer {
+    fn clone(&self) -> Self {
+        Self {
+            config: self.config,
+            shutdown_flag: self.shutdown_flag.clone(),
+        }
+    }
 }
 
 impl AppServer {
     pub fn new(config: &'static ServerConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            shutdown_flag: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    /// 触发优雅关闭
+    pub fn trigger_shutdown(&self) {
+        self.shutdown_flag.store(true, Ordering::SeqCst);
+        tracing::info!("Shutdown signal received, initiating graceful shutdown...");
     }
 
     pub async fn start(&self, router: Router) -> anyhow::Result<()> {
@@ -64,7 +87,30 @@ impl AppServer {
         tracing::info!("Swagger UI: http://localhost:{}/swagger-ui", port);
         tracing::info!("Scalar: http://localhost:{}/scalar", port);
 
-        Server::new(listener).serve(service).await;
+        let shutdown_flag = self.shutdown_flag.clone();
+        let server = Server::new(listener);
+
+        // 使用 select! 同时监听服务运行和关闭信号
+        tokio::select! {
+            _ = server.serve(service) => {
+                tracing::info!("Server stopped");
+            }
+            _ = async {
+                loop {
+                    if shutdown_flag.load(Ordering::SeqCst) {
+                        break;
+                    }
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                tracing::info!("Graceful shutdown in progress...");
+                // 给一个时间窗口让剩余请求完成
+                tokio::time::sleep(Duration::from_secs(GRACEFUL_SHUTDOWN_TIMEOUT_SECS)).await;
+                tracing::info!("Graceful shutdown completed, exiting...");
+                // 强制退出进程
+                std::process::exit(0);
+            } => {}
+        }
+
         Ok(())
     }
 }
