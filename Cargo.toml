@@ -48,12 +48,12 @@ daoyi-cloud-common = { version = "0.9.0", path = "crates/libs/commons/daoyi-clou
 daoyi-entity-demo = { version = "0.9.0", path = "crates/libs/entities/daoyi-entity-demo" }
 daoyi-module-demo = { version = "0.9.0", path = "crates/bins/daoyi-module-demo" }
 # third party
-salvo = { version = "0.91.1", features = ["oapi", "cors", "logging", "timeout", "size-limiter", "trailing-slash", "request-id", "anyhow", "affix-state"] }
-salvo-oapi = { version = "0.91.1", features = ["swagger-ui", "scalar", "chrono"] }
-tokio = { version = "1.51.1", features = ["full"] }
+salvo = { version = "0.93.0", features = ["oapi", "cors", "logging", "timeout", "size-limiter", "trailing-slash", "request-id", "anyhow", "affix-state"] }
+salvo-oapi = { version = "0.93.0", features = ["swagger-ui", "scalar", "chrono"] }
+tokio = { version = "1.52.3", features = ["full"] }
 tracing = { version = "0.1.44", features = ["async-await"] }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "chrono"] }
-config = { version = "0.15.22", features = ["yaml"] }
+config = { version = "0.15.23", features = ["yaml"] }
 serde = { version = "1.0.228", features = ["derive"] }
 anyhow = { version = "1.0.102" }
 sea-orm = { version = "2.0.0-rc.38", features = ["with-chrono", "debug-print", "sqlx-mysql", "with-rust_decimal", "runtime-tokio"] }
@@ -63,8 +63,8 @@ bytesize = { version = "2.3.1" }
 validator = { version = "0.20.0", features = ["derive"] }
 regex = { version = "1.12.3" }
 idgenerator = { version = "2.0.0" }
-bcrypt = { version = "0.19.0" }
-jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+bcrypt = { version = "0.19.1" }
+jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 wax = { version = "0.7.0" }
 serde_json = { version = "1.0.149" }
 serde_html_form = { version = "0.4.0" }
