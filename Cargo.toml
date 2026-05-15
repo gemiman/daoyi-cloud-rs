@@ -20,7 +20,12 @@ daoyi-cloud-common.workspace = true
 daoyi-module-demo.workspace = true
 
 [workspace]
-members = ["crates/libs/commons/*", "crates/libs/entities/*", "crates/bins/*"]
+members = [
+    "crates/libs/commons/*",
+    "crates/libs/entities/*",
+    "crates/bins/*",
+    "crates/study/*"
+]
 resolver = "2"
 
 [workspace.package]
