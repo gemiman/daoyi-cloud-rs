@@ -127,12 +127,8 @@ impl AppServer {
             .push(Scalar::new("/api-docs/openapi.json").into_router("/scalar"));
 
         let cors = Self::build_cors(&self.config.cors);
-
-        // 注入 AppContext 到 Depo
         let ctx_injector = InjectContext::new(self.ctx.clone());
 
-        // 全局中间件（外层 → 内层）：
-        //   InjectCtx → RateLimit → SecurityHeaders → Metrics → RequestId → CORS → Timeout
         let service = Service::new(router)
             .hoop(ctx_injector)
             .hoop(RateLimitMiddleware::new())
@@ -144,8 +140,9 @@ impl AppServer {
                 DEFAULT_REQUEST_TIMEOUT_SECS,
             )));
 
+        // 创建监听器
         let listener = TcpListener::new(("0.0.0.0", port)).bind().await;
-        tracing::info!("listening on http://0.0.0.0:{}", port);
+        tracing::info!("listening on 0.0.0.0:{}", port);
         tracing::info!("Swagger UI: http://localhost:{}/swagger-ui", port);
         tracing::info!("Scalar: http://localhost:{}/scalar", port);
         tracing::info!("Health check: http://localhost:{}/health", port);
@@ -154,6 +151,7 @@ impl AppServer {
         let shutdown_flag = self.shutdown_flag.clone();
         let server = Server::new(listener);
 
+        // 优雅关闭：让 server.serve 返回而不是 process::exit
         tokio::select! {
             _ = server.serve(service) => {
                 tracing::info!("Server stopped");
@@ -166,7 +164,8 @@ impl AppServer {
                 tracing::info!("Graceful shutdown in progress...");
                 tokio::time::sleep(Duration::from_secs(GRACEFUL_SHUTDOWN_TIMEOUT_SECS)).await;
                 tracing::info!("Graceful shutdown completed, exiting...");
-                std::process::exit(0);
+                // 注意：Salvo 0.93 的 Server 没有 stop() 方法，
+                // 此处从 select! 返回后，main 函数结束即进程退出
             } => {}
         }
         Ok(())

@@ -1,21 +1,15 @@
 use serde::Deserialize;
 
-/// CORS 配置
 #[derive(Debug, Deserialize, Clone)]
 pub struct CorsConfig {
-    /// 允许的 Origin，空表示允许所有
     #[serde(default)]
     pub allowed_origins: Vec<String>,
-    /// 允许的 HTTP 方法，空表示允许所有
     #[serde(default)]
     pub allowed_methods: Vec<String>,
-    /// 允许的请求头，空表示允许所有
     #[serde(default)]
     pub allowed_headers: Vec<String>,
-    /// 是否允许携带凭证（cookies）
     #[serde(default)]
     pub allow_credentials: bool,
-    /// 预检请求缓存时间（秒）
     #[serde(default = "default_max_age")]
     pub max_age_secs: u64,
 }
@@ -36,12 +30,38 @@ fn default_max_age() -> u64 {
     43200
 }
 
+/// TLS/HTTPS 配置
+#[derive(Debug, Deserialize, Clone)]
+pub struct TlsConfig {
+    /// 是否启用 HTTPS
+    #[serde(default)]
+    pub enabled: bool,
+    /// 证书路径
+    #[serde(default)]
+    pub cert_path: String,
+    /// 私钥路径
+    #[serde(default)]
+    pub key_path: String,
+}
+
+impl Default for TlsConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            cert_path: String::new(),
+            key_path: String::new(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct ServerConfig {
     port: Option<u16>,
-    /// CORS 配置（可选）
     #[serde(default)]
     pub cors: CorsConfig,
+    /// TLS 配置
+    #[serde(default)]
+    pub tls: TlsConfig,
 }
 
 impl ServerConfig {

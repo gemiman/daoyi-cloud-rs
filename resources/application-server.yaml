@@ -6,6 +6,10 @@ server:
     allowed_headers: [ ]
     allow_credentials: false
     max_age_secs: 43200
+  tls:
+    enabled: false
+    cert_path: ""
+    key_path: ""
 
 database:
   host: 127.0.0.1
