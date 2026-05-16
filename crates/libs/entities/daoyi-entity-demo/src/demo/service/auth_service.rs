@@ -35,23 +35,34 @@ pub async fn login(db: &DatabaseConnection, params: LoginParams) -> ApiResult<Lo
 mod tests {
     use super::*;
 
+    fn make_user() -> sys_user::Model {
+        sys_user::Model {
+            id: 1,
+            name: "测试".into(),
+            gender: daoyi_cloud_common::constants::enumeration::Gender::Male,
+            account: "test".into(),
+            password: "$2b$12$PsumwxjxX/o1RNOKpkc.Kuxea0izqSuhaod4PCudXoRh3zet1TASK".into(),
+            mobile_phone: "+8613912345678".into(),
+            birthday: sea_orm::prelude::Date::from_ymd_opt(2000, 1, 1).unwrap(),
+            enabled: true,
+            created_at: sea_orm::prelude::DateTime::default(),
+            updated_at: sea_orm::prelude::DateTime::default(),
+        }
+    }
+
+    fn make_db(results: Vec<sys_user::Model>) -> DatabaseConnection {
+        sea_orm::MockDatabase::new(sea_orm::DatabaseBackend::MySql)
+            .append_query_results([results])
+            .into_connection()
+    }
+
+    // 注意：JWT 编解码依赖全局配置，不在此处测试。
+    // 集成测试环境中可通过 `init_from_config()` 初始化后再测试。
+    // 此处仅测试业务逻辑分支。
+
     #[tokio::test]
     async fn test_login_invalid_password() {
-        let db = sea_orm::MockDatabase::new(sea_orm::DatabaseBackend::MySql)
-            .append_query_results([vec![sys_user::Model {
-                id: 1,
-                name: "测试".into(),
-                gender: daoyi_cloud_common::constants::enumeration::Gender::Male,
-                account: "test".into(),
-                password: "$2b$12$PsumwxjxX/o1RNOKpkc.Kuxea0izqSuhaod4PCudXoRh3zet1TASK".into(),
-                mobile_phone: "+8613912345678".into(),
-                birthday: sea_orm::prelude::Date::from_ymd_opt(2000, 1, 1).unwrap(),
-                enabled: true,
-                created_at: sea_orm::prelude::DateTime::default(),
-                updated_at: sea_orm::prelude::DateTime::default(),
-            }]])
-            .into_connection();
-
+        let db = make_db(vec![make_user()]);
         let result = login(
             &db,
             LoginParams {
@@ -60,7 +71,6 @@ mod tests {
             },
         )
         .await;
-
         assert!(result.is_err());
         match result {
             Err(ApiError::Biz(msg)) => assert!(msg.contains("密码错误") || msg.contains("账号")),
@@ -70,21 +80,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_login_disabled_user() {
-        let db = sea_orm::MockDatabase::new(sea_orm::DatabaseBackend::MySql)
-            .append_query_results([vec![sys_user::Model {
-                id: 2,
-                name: "禁用用户".into(),
-                gender: daoyi_cloud_common::constants::enumeration::Gender::Female,
-                account: "disabled".into(),
-                password: "hash".into(),
-                mobile_phone: "+8613912345678".into(),
-                birthday: sea_orm::prelude::Date::from_ymd_opt(2000, 1, 1).unwrap(),
-                enabled: false,
-                created_at: sea_orm::prelude::DateTime::default(),
-                updated_at: sea_orm::prelude::DateTime::default(),
-            }]])
-            .into_connection();
-
+        let mut user = make_user();
+        user.enabled = false;
+        let db = make_db(vec![user]);
         let result = login(
             &db,
             LoginParams {
@@ -93,10 +91,27 @@ mod tests {
             },
         )
         .await;
-
         assert!(result.is_err());
         match result {
             Err(ApiError::Biz(msg)) => assert_eq!(msg, "账号已被禁用"),
+            _ => panic!("expected Biz error"),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_login_account_not_found() {
+        let db = make_db(vec![]);
+        let result = login(
+            &db,
+            LoginParams {
+                account: "nonexistent".into(),
+                password: "12345678".into(),
+            },
+        )
+        .await;
+        assert!(result.is_err());
+        match result {
+            Err(ApiError::Biz(msg)) => assert!(msg.contains("账号") && msg.contains("密码")),
             _ => panic!("expected Biz error"),
         }
     }

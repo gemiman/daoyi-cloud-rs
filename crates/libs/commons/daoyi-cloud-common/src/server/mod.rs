@@ -2,6 +2,7 @@ pub mod headers;
 pub mod latency;
 pub mod metrics;
 pub mod ratelimit;
+pub mod versioning;
 
 use crate::conf::ServerConfig;
 use crate::conf::server::CorsConfig;

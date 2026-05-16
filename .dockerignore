@@ -1,11 +1,30 @@
-target/
+# 版本控制
 .git/
 .github/
-docs/
-.cargo/
-.env
-*.md
-*.sql
 .gitignore
 .gitattributes
-.DS_Store
+
+# Rust 编译产物
+target/
+
+# 文档（运行时不需要）
+docs/
+README.md
+CHANGELOG.md
+LICENSE
+
+# 开发配置
+.env
+.env.example
+.idea/
+*.swp
+*.swo
+
+# 部署配置（K8s 清单运行时不需要）
+deploy/
+
+# 优化文档（运行时不需要，已体现在代码中）
+**/optimization-guide.md
+
+# 本地缓存
+.cargo/
