@@ -1,5 +1,11 @@
 server:
   port: 38080
+  cors:
+    allowed_origins: [ ]
+    allowed_methods: [ ]
+    allowed_headers: [ ]
+    allow_credentials: false
+    max_age_secs: 43200
 
 database:
   host: 127.0.0.1
@@ -7,13 +13,21 @@ database:
   user: root
   password: 123456
   database: demo
+  pool:
+    min_connections: 2
+    max_connections: 10
+    connect_timeout_secs: 30
+    acquire_timeout_secs: 30
+    idle_timeout_secs: 60
+    max_lifetime_secs: 300
+    sqlx_logging: false
 
 auth:
   ignore_urls:
     - "**/login"
     - "**/health"
   jwt:
-    secret: "1qasrf45Xt6yh45tyhj6Q7yuikl89iolfty7"
+    secret: "456"
     expiration_secs: 3600
     audience: "daoyi-cloud"
     issuer: "daoyi-cloud"

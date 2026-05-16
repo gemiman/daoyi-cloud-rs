@@ -1,8 +1,13 @@
 pub mod latency;
+pub mod metrics;
 
 use crate::conf::ServerConfig;
+use crate::conf::server::CorsConfig;
 use crate::db;
-use salvo::cors::{Any, Cors};
+use crate::server::metrics::MetricsMiddleware;
+use salvo::cors::{AllowOrigin, Cors, CorsHandler};
+use salvo::http::Method;
+use salvo::http::header::HeaderValue;
 use salvo::oapi::OpenApi;
 use salvo::oapi::security::{ApiKey, ApiKeyValue, Http, HttpAuthScheme, SecurityScheme};
 use salvo::prelude::*;
@@ -38,10 +43,47 @@ impl AppServer {
         }
     }
 
-    /// 触发优雅关闭
     pub fn trigger_shutdown(&self) {
         self.shutdown_flag.store(true, Ordering::SeqCst);
         tracing::info!("Shutdown signal received, initiating graceful shutdown...");
+    }
+
+    fn build_cors(cors_cfg: &CorsConfig) -> CorsHandler {
+        let mut cors = Cors::new();
+        if cors_cfg.allowed_origins.is_empty() {
+            cors = cors.allow_origin(AllowOrigin::any());
+        } else {
+            let origins: Vec<HeaderValue> = cors_cfg
+                .allowed_origins
+                .iter()
+                .filter_map(|o| o.parse::<HeaderValue>().ok())
+                .collect();
+            cors = cors.allow_origin(AllowOrigin::list(origins));
+        }
+        if cors_cfg.allowed_methods.is_empty() {
+            cors = cors.allow_methods(salvo::cors::Any);
+        } else {
+            let methods: Vec<Method> = cors_cfg
+                .allowed_methods
+                .iter()
+                .filter_map(|m| m.parse::<Method>().ok())
+                .collect();
+            cors = cors.allow_methods(methods);
+        }
+        if cors_cfg.allowed_headers.is_empty() {
+            cors = cors.allow_headers(salvo::cors::Any);
+        } else {
+            let headers: Vec<salvo::http::HeaderName> = cors_cfg
+                .allowed_headers
+                .iter()
+                .filter_map(|h| h.parse::<salvo::http::HeaderName>().ok())
+                .collect();
+            cors = cors.allow_headers(headers);
+        }
+        cors = cors
+            .allow_credentials(cors_cfg.allow_credentials)
+            .max_age(Duration::from_secs(cors_cfg.max_age_secs));
+        cors.into_handler()
     }
 
     pub async fn start(&self, router: Router) -> anyhow::Result<()> {
@@ -50,9 +92,10 @@ impl AppServer {
         let router = router
             .push(Router::new().get(index))
             .push(Router::with_path("health").get(health_check))
+            .push(Router::with_path("metrics").get(metrics::report))
             .hoop(TrailingSlash::new(TrailingSlashAction::Remove));
 
-        // 创建 OpenAPI 文档（必须在所有路由注册之后 merge）
+        // OpenAPI 文档
         let doc = OpenApi::new("DaoYi Cloud API", "0.9.0")
             .add_security_scheme(
                 "bearer_auth",
@@ -76,17 +119,12 @@ impl AppServer {
             )
             .push(Scalar::new("/api-docs/openapi.json").into_router("/scalar"));
 
-        // CORS
-        let cors = Cors::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any)
-            .allow_credentials(false)
-            .max_age(Duration::from_secs(43200))
-            .into_handler();
+        // 可配置 CORS
+        let cors = Self::build_cors(&self.config.cors);
 
-        // 全局中间件
+        // 全局中间件：Metrics → RequestId → CORS → Timeout
         let service = Service::new(router)
+            .hoop(MetricsMiddleware::new())
             .hoop(RequestId::new())
             .hoop(cors)
             .hoop(Timeout::new(Duration::from_secs(
@@ -98,6 +136,7 @@ impl AppServer {
         tracing::info!("Swagger UI: http://localhost:{}/swagger-ui", port);
         tracing::info!("Scalar: http://localhost:{}/scalar", port);
         tracing::info!("Health check: http://localhost:{}/health", port);
+        tracing::info!("Metrics: http://localhost:{}/metrics", port);
 
         let shutdown_flag = self.shutdown_flag.clone();
         let server = Server::new(listener);
@@ -108,9 +147,7 @@ impl AppServer {
             }
             _ = async {
                 loop {
-                    if shutdown_flag.load(Ordering::SeqCst) {
-                        break;
-                    }
+                    if shutdown_flag.load(Ordering::SeqCst) { break; }
                     tokio::time::sleep(Duration::from_millis(100)).await;
                 }
                 tracing::info!("Graceful shutdown in progress...");
@@ -119,28 +156,22 @@ impl AppServer {
                 std::process::exit(0);
             } => {}
         }
-
         Ok(())
     }
 }
 
-/// 首页响应
 #[endpoint]
 async fn index(res: &mut Response) {
     crate::json_ok!(res, "Hello DaoYi Cloud Rust!");
 }
 
-/// 健康检查端点
 #[endpoint]
 async fn health_check(res: &mut Response) {
     let db_ok = db::get().ping().await.is_ok();
     let status = if db_ok { "UP" } else { "DOWN" };
-
     use salvo::writing::Json;
     res.render(Json(serde_json::json!({
         "status": status,
-        "checks": {
-            "database": status
-        }
+        "checks": { "database": status }
     })));
 }

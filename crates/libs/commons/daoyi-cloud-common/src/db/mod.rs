@@ -23,15 +23,18 @@ pub async fn init() -> anyhow::Result<()> {
         db_conf.database()
     );
     tracing::info!("Connecting to database: {}", url);
+
+    let pool = &db_conf.pool;
     let mut options = ConnectOptions::new(url);
     options
-        .min_connections(2)
-        .max_connections(10)
-        .connect_timeout(Duration::from_secs(30))
-        .acquire_timeout(Duration::from_secs(30))
-        .idle_timeout(Duration::from_secs(60))
-        .max_lifetime(Duration::from_secs(300))
-        .sqlx_logging(false);
+        .min_connections(pool.min_connections)
+        .max_connections(pool.max_connections)
+        .connect_timeout(Duration::from_secs(pool.connect_timeout_secs))
+        .acquire_timeout(Duration::from_secs(pool.acquire_timeout_secs))
+        .idle_timeout(Duration::from_secs(pool.idle_timeout_secs))
+        .max_lifetime(Duration::from_secs(pool.max_lifetime_secs))
+        .sqlx_logging(pool.sqlx_logging);
+
     let dc = Database::connect(options).await?;
     dc.ping().await?;
     tracing::info!("Database connection established");
