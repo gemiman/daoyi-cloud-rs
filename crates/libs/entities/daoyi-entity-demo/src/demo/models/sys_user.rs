@@ -22,15 +22,15 @@ page_query_params! {
 #[serde(rename_all = "camelCase")]
 pub struct UserParams {
     /// 用户姓名
-    #[validate(length(min = 1, max = 16, message = "用户姓名长度必须在 1 到 16 之间"))]
+    #[validate(length(min = 1, max = 32, message = "用户姓名长度必须在 1 到 32 之间"))]
     pub name: String,
     /// 性别
     pub gender: Gender,
     /// 登录账号
-    #[validate(length(min = 1, max = 16, message = "账号长度必须在 1 到 16 之间"))]
+    #[validate(length(min = 1, max = 32, message = "账号长度必须在 1 到 32 之间"))]
     pub account: String,
-    /// 登录密码
-    #[validate(length(min = 6, max = 16, message = "密码长度必须在 6 到 16 之间"))]
+    /// 登录密码（留空则不更新密码）
+    #[validate(length(min = 6, max = 64, message = "密码长度必须在 6 到 64 之间"))]
     pub password: String,
     /// 手机号码
     #[validate(custom(function = "validate_mobile_phone"))]

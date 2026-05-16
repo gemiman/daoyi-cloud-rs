@@ -1,0 +1,18 @@
+[package]
+name = "migration"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+sea-orm.workspace = true
+sea-orm-migration.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+anyhow.workspace = true
+
+[[bin]]
+name = "migration"
+path = "src/bin/main.rs"

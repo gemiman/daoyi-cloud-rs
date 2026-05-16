@@ -24,20 +24,20 @@ pub fn create_router() -> Router {
     summary = "删除用户",
     description = "根据用户ID删除指定用户",
     responses(
-        (status_code = 200, description = "删除成功", body = ApiResponse<()>)
+        (status_code = 200, description = "删除成功", body = ApiResponse<bool>)
     )
 )]
-async fn delete(req: &mut Request, _depot: &mut Depot, res: &mut Response) {
+async fn delete(req: &mut Request, res: &mut Response) {
     let id: i64 = match extract::extract_path_param(req, "id") {
         Ok(id) => id,
         Err(e) => {
-            daoyi_cloud_common::response::write_error_response(res, e);
+            e.write_to_response(res);
             return;
         }
     };
     match sys_user_service::delete_user_by_id(id).await {
-        Ok(result) => daoyi_cloud_common::success!(res, result),
-        Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
+        Ok(result) => daoyi_cloud_common::json_ok!(res, result),
+        Err(e) => e.write_to_response(res),
     }
 }
 
@@ -51,17 +51,18 @@ async fn delete(req: &mut Request, _depot: &mut Depot, res: &mut Response) {
         (status_code = 200, description = "查询成功，返回用户信息", body = ApiResponse<SysUser>)
     )
 )]
-async fn get_user_by_id(req: &mut Request, _depot: &mut Depot, res: &mut Response) {
+async fn get_user_by_id(req: &mut Request, res: &mut Response) {
     let id: i64 = match extract::extract_path_param(req, "id") {
         Ok(id) => id,
         Err(e) => {
-            daoyi_cloud_common::response::write_error_response(res, e);
+            e.write_to_response(res);
             return;
         }
     };
     match sys_user_service::get_user_by_id(id).await {
-        Ok(user) => daoyi_cloud_common::success!(res, user),
-        Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
+        Ok(Some(user)) => daoyi_cloud_common::json_ok!(res, user),
+        Ok(None) => daoyi_cloud_common::json_ok!(res),
+        Err(e) => e.write_to_response(res),
     }
 }
 
@@ -73,23 +74,27 @@ async fn get_user_by_id(req: &mut Request, _depot: &mut Depot, res: &mut Respons
     description = "根据用户ID更新用户信息",
     request_body = UserParams,
     responses(
-        (status_code = 200, description = "更新成功", body = ApiResponse<SysUser>)
+        (status_code = 200, description = "更新成功", body = ApiResponse<bool>)
     )
 )]
 async fn update(req: &mut Request, depot: &mut Depot, res: &mut Response) {
     let id: i64 = match extract::extract_path_param(req, "id") {
         Ok(id) => id,
         Err(e) => {
-            daoyi_cloud_common::response::write_error_response(res, e);
+            e.write_to_response(res);
             return;
         }
     };
-    match extract::extract_valid_json::<UserParams>(req, depot).await {
-        Ok(params) => match sys_user_service::update_user_by_id(id, params).await {
-            Ok(result) => daoyi_cloud_common::success!(res, result),
-            Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
-        },
-        Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
+    let params = match extract::extract_valid_json::<UserParams>(req, depot).await {
+        Ok(p) => p,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
+        }
+    };
+    match sys_user_service::update_user_by_id(id, params).await {
+        Ok(result) => daoyi_cloud_common::json_ok!(res, result),
+        Err(e) => e.write_to_response(res),
     }
 }
 
@@ -105,12 +110,16 @@ async fn update(req: &mut Request, depot: &mut Depot, res: &mut Response) {
     )
 )]
 async fn create(req: &mut Request, depot: &mut Depot, res: &mut Response) {
-    match extract::extract_valid_json::<UserParams>(req, depot).await {
-        Ok(params) => match sys_user_service::create_user(params).await {
-            Ok(user) => daoyi_cloud_common::success!(res, user),
-            Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
-        },
-        Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
+    let params = match extract::extract_valid_json::<UserParams>(req, depot).await {
+        Ok(p) => p,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
+        }
+    };
+    match sys_user_service::create_user(params).await {
+        Ok(user) => daoyi_cloud_common::json_ok!(res, user),
+        Err(e) => e.write_to_response(res),
     }
 }
 
@@ -126,8 +135,8 @@ async fn create(req: &mut Request, depot: &mut Depot, res: &mut Response) {
 )]
 async fn find_page(params: UserQueryParams, res: &mut Response) {
     match sys_user_service::query_page(params).await {
-        Ok(users) => daoyi_cloud_common::success!(res, users),
-        Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
+        Ok(users) => daoyi_cloud_common::json_ok!(res, users),
+        Err(e) => e.write_to_response(res),
     }
 }
 
@@ -143,7 +152,7 @@ async fn find_page(params: UserQueryParams, res: &mut Response) {
 )]
 async fn query_users(res: &mut Response) {
     match sys_user_service::query_users().await {
-        Ok(users) => daoyi_cloud_common::success!(res, users),
-        Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
+        Ok(users) => daoyi_cloud_common::json_ok!(res, users),
+        Err(e) => e.write_to_response(res),
     }
 }

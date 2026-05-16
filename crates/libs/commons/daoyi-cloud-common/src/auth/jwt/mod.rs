@@ -1,6 +1,6 @@
 pub mod middleware;
 
-use crate::constants::default_values::DEFAULT_JWT_SECRET;
+use crate::conf;
 use crate::utils::id_utils;
 use jsonwebtoken::{
     Algorithm, DecodingKey, EncodingKey, Header, Validation, get_current_timestamp,
@@ -8,10 +8,10 @@ use jsonwebtoken::{
 use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 use std::time::Duration;
 
-static DEFAULT_JWT: LazyLock<JWT> = LazyLock::new(|| JWT::default());
+static DEFAULT_JWT: OnceLock<JWT> = OnceLock::new();
 
 /// JWT 主体信息
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -42,13 +42,21 @@ pub struct JwtConfig {
     pub issuer: String,
 }
 
-impl Default for JwtConfig {
-    fn default() -> Self {
+impl JwtConfig {
+    /// 从配置系统创建 JwtConfig
+    pub fn from_config() -> Self {
+        let auth_config = conf::get().auth();
+        let secret = if !auth_config.jwt.secret.is_empty() {
+            auth_config.jwt.secret.clone()
+        } else {
+            // 回退到环境变量
+            std::env::var("APP_AUTH_JWT_SECRET").unwrap_or_default()
+        };
         Self {
-            secret: Cow::Borrowed(DEFAULT_JWT_SECRET),
-            expiration: Duration::from_secs(60 * 60),
-            audience: "audience".to_string(),
-            issuer: "issuer".to_string(),
+            secret: Cow::Owned(secret),
+            expiration: Duration::from_secs(auth_config.jwt.expiration_secs),
+            audience: auth_config.jwt.audience.clone(),
+            issuer: auth_config.jwt.issuer.clone(),
         }
     }
 }
@@ -115,12 +123,24 @@ impl JWT {
     }
 }
 
-impl Default for JWT {
-    fn default() -> Self {
-        Self::new(JwtConfig::default())
-    }
+/// 获取全局 JWT 实例（从配置系统懒加载初始化）
+pub fn default_jwt() -> &'static JWT {
+    DEFAULT_JWT.get_or_init(|| {
+        let config = JwtConfig::from_config();
+        JWT::new(config)
+    })
 }
 
-pub fn default_jwt() -> &'static JWT {
-    &DEFAULT_JWT
+/// 在应用启动时初始化 JWT（提前校验配置是否有效）
+pub fn init_from_config() -> anyhow::Result<()> {
+    let config = JwtConfig::from_config();
+    if config.secret.is_empty() {
+        anyhow::bail!(
+            "JWT secret 未配置！请在配置文件中设置 auth.jwt.secret，或通过环境变量 APP_AUTH_JWT_SECRET 设置"
+        );
+    }
+    let jwt = JWT::new(config);
+    DEFAULT_JWT
+        .set(jwt)
+        .map_err(|_| anyhow::anyhow!("JWT 已初始化，重复调用 init_from_config"))
 }

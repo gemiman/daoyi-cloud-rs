@@ -1,11 +1,8 @@
 use crate::auth::jwt::{Principal, default_jwt};
 use crate::conf;
 use crate::error::ApiError;
-use crate::response::ApiResponse;
-use salvo::http::StatusCode;
 use salvo::http::header::AUTHORIZATION;
 use salvo::prelude::*;
-use salvo::writing::Json;
 use std::sync::LazyLock;
 
 /// JWT 认证中间件
@@ -22,59 +19,42 @@ impl JwtAuthHandler {
         ctrl: &mut FlowCtrl,
     ) {
         let path = req.uri().path();
+
+        // 检查是否在忽略列表中
         match conf::get().auth().ignored(path) {
-            Ok(true) => {
-                return;
-            }
+            Ok(true) => return,
             Ok(false) => {}
             Err(e) => {
-                res.status_code(StatusCode::INTERNAL_SERVER_ERROR);
-                res.render(Json(ApiResponse::<()>::err_msg(e.to_string())));
+                e.write_to_response(res);
                 ctrl.skip_rest();
                 return;
             }
         }
 
-        let token = req
+        let token = match req
             .headers()
             .get(AUTHORIZATION)
-            .map(|value| -> Result<_, ApiError> {
-                let token = value
-                    .to_str()
-                    .map_err(|_| {
-                        ApiError::Unauthenticated(String::from("Authorization请求头无效"))
-                    })?
-                    .strip_prefix("Bearer ")
-                    .ok_or_else(|| {
-                        ApiError::Unauthenticated(String::from("Authorization请求头格式无效"))
-                    })?;
-                Ok(token)
-            })
-            .transpose();
-
-        match token {
-            Ok(Some(t)) => match default_jwt().decode(t) {
-                Ok(principal) => {
-                    req.extensions_mut().insert(principal);
-                }
-                Err(err) => {
-                    res.status_code(StatusCode::UNAUTHORIZED);
-                    res.render(Json(ApiResponse::<()>::err_msg(err.to_string())));
-                    ctrl.skip_rest();
-                    return;
-                }
-            },
-            Ok(None) => {
-                res.status_code(StatusCode::UNAUTHORIZED);
-                res.render(Json(ApiResponse::<()>::err_msg("Authorization请求头缺失")));
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.strip_prefix("Bearer "))
+        {
+            Some(token) => token,
+            None => {
+                let err =
+                    ApiError::Unauthenticated(String::from("Authorization请求头缺失或格式无效"));
+                err.write_to_response(res);
                 ctrl.skip_rest();
                 return;
             }
-            Err(e) => {
-                res.status_code(StatusCode::UNAUTHORIZED);
-                res.render(Json(ApiResponse::<()>::err_msg(e.to_string())));
+        };
+
+        match default_jwt().decode(token) {
+            Ok(principal) => {
+                req.extensions_mut().insert(principal);
+            }
+            Err(err) => {
+                let api_err = ApiError::Internal(err);
+                api_err.write_to_response(res);
                 ctrl.skip_rest();
-                return;
             }
         }
     }

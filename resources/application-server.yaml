@@ -11,3 +11,9 @@ database:
 auth:
   ignore_urls:
     - "**/login"
+    - "**/health"
+  jwt:
+    secret: "1qasrf45Xt6yh45tyhj6Q7yuikl89iolfty7"
+    expiration_secs: 3600
+    audience: "daoyi-cloud"
+    issuer: "daoyi-cloud"

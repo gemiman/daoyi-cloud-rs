@@ -26,17 +26,16 @@ pub fn create_router() -> Router {
     )
 )]
 async fn login(req: &mut Request, depot: &mut Depot, res: &mut Response) {
-    match extract::extract_valid_json::<LoginParams>(req, depot).await {
-        Ok(params) => {
-            tracing::info!("login: {:?}", params);
-            match auth_service::login(params).await {
-                Ok(result) => {
-                    daoyi_cloud_common::success!(res, result);
-                }
-                Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
-            }
+    let params = match extract::extract_valid_json::<LoginParams>(req, depot).await {
+        Ok(p) => p,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
         }
-        Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
+    };
+    match auth_service::login(params).await {
+        Ok(result) => daoyi_cloud_common::json_ok!(res, result),
+        Err(e) => e.write_to_response(res),
     }
 }
 
@@ -50,11 +49,9 @@ async fn login(req: &mut Request, depot: &mut Depot, res: &mut Response) {
         (status_code = 200, description = "获取成功，返回用户信息", body = ApiResponse<Principal>)
     )
 )]
-async fn get_user_info(req: &mut Request, _depot: &mut Depot, res: &mut Response) {
+async fn get_user_info(req: &mut Request, res: &mut Response) {
     match extract_principal(req) {
-        Ok(principal) => {
-            daoyi_cloud_common::success!(res, principal);
-        }
-        Err(e) => daoyi_cloud_common::response::write_error_response(res, e),
+        Ok(principal) => daoyi_cloud_common::json_ok!(res, principal),
+        Err(e) => e.write_to_response(res),
     }
 }

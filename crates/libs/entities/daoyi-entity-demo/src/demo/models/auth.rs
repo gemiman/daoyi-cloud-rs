@@ -7,10 +7,10 @@ use validator::Validate;
 #[serde(rename_all = "camelCase")]
 pub struct LoginParams {
     /// 登录账号
-    #[validate(length(min = 1, max = 16, message = "账号长度必须在 1 到 16 之间"))]
+    #[validate(length(min = 1, max = 32, message = "账号长度必须在 1 到 32 之间"))]
     pub account: String,
     /// 登录密码
-    #[validate(length(min = 6, max = 16, message = "密码长度必须在 6 到 16 之间"))]
+    #[validate(length(min = 6, max = 64, message = "密码长度必须在 6 到 64 之间"))]
     pub password: String,
 }
 

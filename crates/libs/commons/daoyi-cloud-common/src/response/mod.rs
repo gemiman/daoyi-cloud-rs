@@ -1,11 +1,5 @@
 use salvo::oapi::ToSchema;
-use salvo::prelude::*;
-use salvo::writing::Json;
 use serde::{Deserialize, Serialize};
-
-use crate::error::ApiError;
-
-pub type CommonResult<T> = Result<ApiResponse<T>, ApiError>;
 
 /// 统一 API 响应结构
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -17,6 +11,9 @@ pub struct ApiResponse<T: Serialize + ToSchema + Send> {
     /// 响应数据
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<T>,
+    /// 请求追踪 ID（用于日志关联）
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub request_id: String,
 }
 
 impl<T: Serialize + ToSchema + Send> ApiResponse<T> {
@@ -25,11 +22,21 @@ impl<T: Serialize + ToSchema + Send> ApiResponse<T> {
             code,
             msg: String::from(msg.as_ref()),
             data,
+            request_id: String::new(),
         }
     }
 
     pub fn ok(data: Option<T>) -> Self {
-        Self::new(0, "", data)
+        Self::new(0, "操作成功", data)
+    }
+
+    pub fn ok_with_request_id(data: Option<T>, request_id: String) -> Self {
+        Self {
+            code: 0,
+            msg: String::from("操作成功"),
+            data,
+            request_id,
+        }
     }
 
     pub fn err<M: AsRef<str>>(code: i32, msg: M) -> Self {
@@ -41,37 +48,27 @@ impl<T: Serialize + ToSchema + Send> ApiResponse<T> {
     }
 
     pub fn ok_empty() -> Self {
-        Self::new(0, "", None)
+        Self::new(0, "操作成功", None)
+    }
+
+    /// 设置请求追踪 ID
+    pub fn with_request_id(mut self, request_id: String) -> Self {
+        self.request_id = request_id;
+        self
     }
 }
 
-/// 将 ApiResponse 写入 salvo Response
-pub fn write_json_response<T: Serialize + ToSchema + Send>(
-    res: &mut Response,
-    data: ApiResponse<T>,
-) {
-    res.status_code(StatusCode::OK);
-    res.render(Json(data));
-}
-
-/// 将 ApiError 写入 salvo Response
-pub fn write_error_response(res: &mut Response, error: ApiError) {
-    let status = error.status_code();
-    let body = ApiResponse::<()>::err_msg(error.to_string());
-    res.status_code(status);
-    res.render(Json(body));
-}
-
+/// 将成功响应写入 Salvo Response（等价于旧的 success! 宏）
 #[macro_export]
-macro_rules! success {
+macro_rules! json_ok {
     ($res:expr, $data:expr) => {
-        $crate::response::write_json_response($res, $crate::response::ApiResponse::ok(Some($data)))
+        $res.render(salvo::writing::Json($crate::response::ApiResponse::ok(
+            Some($data),
+        )))
     };
     ($res:expr) => {
-        $crate::response::write_json_response($res, $crate::response::ApiResponse::<()>::ok(None))
+        $res.render(salvo::writing::Json(
+            $crate::response::ApiResponse::<()>::ok(None),
+        ))
     };
-}
-
-pub fn _inner_success<T: Serialize + ToSchema + Send>(data: Option<T>) -> CommonResult<T> {
-    Ok(ApiResponse::ok(data))
 }

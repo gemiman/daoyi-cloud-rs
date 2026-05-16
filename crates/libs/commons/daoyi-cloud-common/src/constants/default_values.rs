@@ -17,4 +17,6 @@ pub const fn default_false() -> bool {
     false
 }
 
-pub const DEFAULT_JWT_SECRET: &str = "1qasrf45Xt6yh45tyhj6Q7yuikl89iolfty7";
+pub const DEFAULT_JWT_EXPIRATION_SECS: u64 = 3600;
+pub const DEFAULT_JWT_AUDIENCE: &str = "daoyi-cloud";
+pub const DEFAULT_JWT_ISSUER: &str = "daoyi-cloud";
