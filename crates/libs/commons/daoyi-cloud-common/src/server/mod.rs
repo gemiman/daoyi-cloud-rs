@@ -47,7 +47,12 @@ impl AppServer {
     pub async fn start(&self, router: Router) -> anyhow::Result<()> {
         let port = self.config.port();
 
-        // 创建 OpenAPI 文档
+        let router = router
+            .push(Router::new().get(index))
+            .push(Router::with_path("health").get(health_check))
+            .hoop(TrailingSlash::new(TrailingSlashAction::Remove));
+
+        // 创建 OpenAPI 文档（必须在所有路由注册之后 merge）
         let doc = OpenApi::new("DaoYi Cloud API", "0.9.0")
             .add_security_scheme(
                 "bearer_auth",
@@ -63,16 +68,13 @@ impl AppServer {
             .merge_router(&router);
 
         let router = router
-            .push(Router::new().get(index))
-            .push(Router::with_path("health").get(health_check))
             .push(doc.into_router("/api-docs/openapi.json"))
             .push(
                 SwaggerUi::new("/swagger-ui/{_:.*}")
                     .url("/api-docs/openapi.json")
                     .into_router("/swagger-ui"),
             )
-            .push(Scalar::new("/api-docs/openapi.json").into_router("/scalar"))
-            .hoop(TrailingSlash::new(TrailingSlashAction::Remove));
+            .push(Scalar::new("/api-docs/openapi.json").into_router("/scalar"));
 
         // CORS
         let cors = Cors::new()
