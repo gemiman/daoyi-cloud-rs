@@ -57,7 +57,7 @@ salvo = { version = "0.93.0", features = ["oapi", "cors", "logging", "timeout", 
 salvo-oapi = { version = "0.93.0", features = ["swagger-ui", "scalar", "chrono"] }
 tokio = { version = "1.52.3", features = ["full"] }
 tracing = { version = "0.1.44", features = ["async-await"] }
-tracing-subscriber = { version = "0.3.23", features = ["env-filter", "chrono"] }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "chrono", "json"] }
 config = { version = "0.15.23", features = ["yaml"] }
 serde = { version = "1.0.228", features = ["derive"] }
 anyhow = { version = "1.0.102" }

@@ -1,5 +1,7 @@
+pub mod headers;
 pub mod latency;
 pub mod metrics;
+pub mod ratelimit;
 
 use crate::conf::ServerConfig;
 use crate::conf::server::CorsConfig;
@@ -122,8 +124,14 @@ impl AppServer {
         // 可配置 CORS
         let cors = Self::build_cors(&self.config.cors);
 
-        // 全局中间件：Metrics → RequestId → CORS → Timeout
+        // 全局中间件（外层 → 内层）：
+        //   RateLimit → SecurityHeaders → Metrics → RequestId → CORS → Timeout
+        use crate::server::headers::SecurityHeadersMiddleware;
+        use crate::server::ratelimit::RateLimitMiddleware;
+
         let service = Service::new(router)
+            .hoop(RateLimitMiddleware::new())
+            .hoop(SecurityHeadersMiddleware::new())
             .hoop(MetricsMiddleware::new())
             .hoop(RequestId::new())
             .hoop(cors)
