@@ -61,7 +61,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "chrono", "
 config = { version = "0.15.23", features = ["yaml"] }
 serde = { version = "1.0.228", features = ["derive"] }
 anyhow = { version = "1.0.102" }
-sea-orm = { version = "2.0.0-rc.38", features = ["with-chrono", "debug-print", "sqlx-mysql", "with-rust_decimal", "runtime-tokio"] }
+sea-orm = { version = "2.0.0-rc.38", features = ["with-chrono", "debug-print", "sqlx-mysql", "with-rust_decimal", "runtime-tokio", "mock"] }
 thiserror = { version = "2.0.18" }
 xid = { version = "1.1.1" }
 bytesize = { version = "2.3.1" }

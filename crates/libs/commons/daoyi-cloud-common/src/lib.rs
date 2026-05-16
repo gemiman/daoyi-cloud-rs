@@ -1,5 +1,6 @@
 pub mod app;
 pub mod auth;
+pub mod cache;
 pub mod conf;
 pub mod constants;
 pub mod context;

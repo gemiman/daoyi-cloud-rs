@@ -12,16 +12,32 @@ use std::sync::OnceLock;
 use std::time::Duration;
 
 static DEFAULT_JWT: OnceLock<JWT> = OnceLock::new();
+static REFRESH_EXPIRATION_SECS: u64 = 7 * 24 * 3600; // 7 days
 
-/// JWT 主体信息
+/// JWT 主体信息（含 RBAC）
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct Principal {
-    /// 租户ID
     pub tenant_id: i64,
-    /// 用户ID
     pub id: i64,
-    /// 用户姓名
     pub name: String,
+    /// 角色列表，如 `["admin", "user"]`
+    #[serde(default)]
+    pub roles: Vec<String>,
+    /// 权限列表，如 `["user:create", "user:delete"]`
+    #[serde(default)]
+    pub permissions: Vec<String>,
+}
+
+impl Principal {
+    /// 检查是否拥有指定权限
+    pub fn has_permission(&self, permission: &str) -> bool {
+        self.permissions.iter().any(|p| p == permission)
+    }
+
+    /// 检查是否拥有指定角色
+    pub fn has_role(&self, role: &str) -> bool {
+        self.roles.iter().any(|r| r == role)
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,6 +48,15 @@ pub struct Claims {
     iss: String,
     iat: u64,
     exp: u64,
+    /// 刷新令牌的 jti（仅在 access token 中存在）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rtj: Option<String>,
+    /// 角色列表
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    roles: Vec<String>,
+    /// 权限列表
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    perms: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -43,13 +68,11 @@ pub struct JwtConfig {
 }
 
 impl JwtConfig {
-    /// 从配置系统创建 JwtConfig
     pub fn from_config() -> Self {
         let auth_config = conf::get().auth();
         let secret = if !auth_config.jwt.secret.is_empty() {
             auth_config.jwt.secret.clone()
         } else {
-            // 回退到环境变量
             std::env::var("APP_AUTH_JWT_SECRET").unwrap_or_default()
         };
         Self {
@@ -90,6 +113,7 @@ impl JWT {
         }
     }
 
+    /// 编码 Access Token (含 RBAC claims)
     pub fn encode(&self, principal: Principal) -> anyhow::Result<String> {
         let current_timestamp = get_current_timestamp();
         let claims = Claims {
@@ -102,6 +126,9 @@ impl JWT {
             iss: self.issuer.clone(),
             iat: current_timestamp,
             exp: current_timestamp.saturating_add(self.expiration.as_secs()),
+            rtj: None,
+            roles: principal.roles,
+            perms: principal.permissions,
         };
         Ok(jsonwebtoken::encode(
             &self.header,
@@ -110,6 +137,31 @@ impl JWT {
         )?)
     }
 
+    /// 编码 Refresh Token（长期，仅含基本标识）
+    pub fn encode_refresh(&self, principal: &Principal) -> anyhow::Result<String> {
+        let current_timestamp = get_current_timestamp();
+        let claims = Claims {
+            jti: id_utils::xid(),
+            sub: format!(
+                "{}:{}:{}",
+                principal.tenant_id, principal.id, principal.name
+            ),
+            aud: self.audience.clone(),
+            iss: self.issuer.clone(),
+            iat: current_timestamp,
+            exp: current_timestamp.saturating_add(REFRESH_EXPIRATION_SECS),
+            rtj: None,
+            roles: vec![],
+            perms: vec![],
+        };
+        Ok(jsonwebtoken::encode(
+            &self.header,
+            &claims,
+            &self.encode_secret,
+        )?)
+    }
+
+    /// 解码 Access Token（返回 Principal + jti）
     pub fn decode(&self, token: &str) -> anyhow::Result<Principal> {
         let claims: Claims =
             jsonwebtoken::decode(token, &self.decode_secret, &self.validation)?.claims;
@@ -118,12 +170,21 @@ impl JWT {
             tenant_id: parts.next().unwrap().parse::<i64>()?,
             id: parts.next().unwrap().parse::<i64>()?,
             name: parts.next().unwrap().to_string(),
+            roles: claims.roles,
+            permissions: claims.perms,
         };
         Ok(principal)
     }
+
+    /// 解码 Refresh Token（仅提取 subject）
+    pub fn decode_refresh(&self, token: &str) -> anyhow::Result<(String, u64)> {
+        let validation = self.validation.clone();
+        // Refresh Token 过期时间更长，单独校验
+        let data = jsonwebtoken::decode::<Claims>(token, &self.decode_secret, &validation)?;
+        Ok((data.claims.sub, data.claims.exp))
+    }
 }
 
-/// 获取全局 JWT 实例（从配置系统懒加载初始化）
 pub fn default_jwt() -> &'static JWT {
     DEFAULT_JWT.get_or_init(|| {
         let config = JwtConfig::from_config();
@@ -131,7 +192,6 @@ pub fn default_jwt() -> &'static JWT {
     })
 }
 
-/// 在应用启动时初始化 JWT（提前校验配置是否有效）
 pub fn init_from_config() -> anyhow::Result<()> {
     let config = JwtConfig::from_config();
     if config.secret.is_empty() {

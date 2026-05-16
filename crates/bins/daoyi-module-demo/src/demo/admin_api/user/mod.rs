@@ -1,3 +1,5 @@
+use daoyi_cloud_common::context::AppContext;
+use daoyi_cloud_common::error::ApiError;
 use daoyi_cloud_common::extract;
 use daoyi_cloud_common::pojo::pagination::PageResult;
 use daoyi_cloud_common::response::ApiResponse;
@@ -6,6 +8,12 @@ use daoyi_entity_demo::demo::models::sys_user::{UserParams, UserQueryParams};
 use daoyi_entity_demo::demo::service::sys_user_service;
 use salvo::oapi::endpoint;
 use salvo::prelude::*;
+
+fn get_db(depot: &mut Depot) -> Result<&sea_orm::DatabaseConnection, ApiError> {
+    AppContext::from_depot(depot)
+        .map(|ctx| &ctx.db)
+        .ok_or_else(|| ApiError::Internal(anyhow::anyhow!("AppContext 未注入")))
+}
 
 pub fn create_router() -> Router {
     Router::new()
@@ -27,7 +35,7 @@ pub fn create_router() -> Router {
         (status_code = 200, description = "删除成功", body = ApiResponse<bool>)
     )
 )]
-async fn delete(req: &mut Request, res: &mut Response) {
+async fn delete(req: &mut Request, depot: &mut Depot, res: &mut Response) {
     let id: i64 = match extract::extract_path_param(req, "id") {
         Ok(id) => id,
         Err(e) => {
@@ -35,7 +43,14 @@ async fn delete(req: &mut Request, res: &mut Response) {
             return;
         }
     };
-    match sys_user_service::delete_user_by_id(id).await {
+    let db = match get_db(depot) {
+        Ok(db) => db,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
+        }
+    };
+    match sys_user_service::delete_user_by_id(db, id).await {
         Ok(result) => daoyi_cloud_common::json_ok!(res, result),
         Err(e) => e.write_to_response(res),
     }
@@ -51,7 +66,7 @@ async fn delete(req: &mut Request, res: &mut Response) {
         (status_code = 200, description = "查询成功，返回用户信息", body = ApiResponse<SysUser>)
     )
 )]
-async fn get_user_by_id(req: &mut Request, res: &mut Response) {
+async fn get_user_by_id(req: &mut Request, depot: &mut Depot, res: &mut Response) {
     let id: i64 = match extract::extract_path_param(req, "id") {
         Ok(id) => id,
         Err(e) => {
@@ -59,7 +74,14 @@ async fn get_user_by_id(req: &mut Request, res: &mut Response) {
             return;
         }
     };
-    match sys_user_service::get_user_by_id(id).await {
+    let db = match get_db(depot) {
+        Ok(db) => db,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
+        }
+    };
+    match sys_user_service::get_user_by_id(db, id).await {
         Ok(Some(user)) => daoyi_cloud_common::json_ok!(res, user),
         Ok(None) => daoyi_cloud_common::json_ok!(res),
         Err(e) => e.write_to_response(res),
@@ -92,7 +114,14 @@ async fn update(req: &mut Request, depot: &mut Depot, res: &mut Response) {
             return;
         }
     };
-    match sys_user_service::update_user_by_id(id, params).await {
+    let db = match get_db(depot) {
+        Ok(db) => db,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
+        }
+    };
+    match sys_user_service::update_user_by_id(db, id, params).await {
         Ok(result) => daoyi_cloud_common::json_ok!(res, result),
         Err(e) => e.write_to_response(res),
     }
@@ -117,7 +146,14 @@ async fn create(req: &mut Request, depot: &mut Depot, res: &mut Response) {
             return;
         }
     };
-    match sys_user_service::create_user(params).await {
+    let db = match get_db(depot) {
+        Ok(db) => db,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
+        }
+    };
+    match sys_user_service::create_user(db, params).await {
         Ok(user) => daoyi_cloud_common::json_ok!(res, user),
         Err(e) => e.write_to_response(res),
     }
@@ -133,8 +169,15 @@ async fn create(req: &mut Request, depot: &mut Depot, res: &mut Response) {
         (status_code = 200, description = "查询成功，返回分页结果", body = ApiResponse<PageResult<SysUser>>)
     )
 )]
-async fn find_page(params: UserQueryParams, res: &mut Response) {
-    match sys_user_service::query_page(params).await {
+async fn find_page(params: UserQueryParams, depot: &mut Depot, res: &mut Response) {
+    let db = match get_db(depot) {
+        Ok(db) => db,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
+        }
+    };
+    match sys_user_service::query_page(db, params).await {
         Ok(users) => daoyi_cloud_common::json_ok!(res, users),
         Err(e) => e.write_to_response(res),
     }
@@ -150,8 +193,15 @@ async fn find_page(params: UserQueryParams, res: &mut Response) {
         (status_code = 200, description = "查询成功，返回用户列表", body = ApiResponse<Vec<SysUser>>)
     )
 )]
-async fn query_users(res: &mut Response) {
-    match sys_user_service::query_users().await {
+async fn query_users(depot: &mut Depot, res: &mut Response) {
+    let db = match get_db(depot) {
+        Ok(db) => db,
+        Err(e) => {
+            e.write_to_response(res);
+            return;
+        }
+    };
+    match sys_user_service::query_users(db).await {
         Ok(users) => daoyi_cloud_common::json_ok!(res, users),
         Err(e) => e.write_to_response(res),
     }

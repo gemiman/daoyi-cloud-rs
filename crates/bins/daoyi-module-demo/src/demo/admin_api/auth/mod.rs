@@ -34,16 +34,22 @@ async fn login(req: &mut Request, depot: &mut Depot, res: &mut Response) {
             return;
         }
     };
-    match auth_service::login(params).await {
+    // 从 Depot 获取 AppContext，再获取 db 连接传给 Service（DI 模式）
+    let db = match AppContext::from_depot(depot) {
+        Some(ctx) => &ctx.db,
+        None => {
+            daoyi_cloud_common::error::ApiError::Internal(anyhow::anyhow!("AppContext 未注入"))
+                .write_to_response(res);
+            return;
+        }
+    };
+    match auth_service::login(db, params).await {
         Ok(result) => daoyi_cloud_common::json_ok!(res, result),
         Err(e) => e.write_to_response(res),
     }
 }
 
 /// 获取当前用户信息
-///
-/// 演示如何通过 Depot 获取注入的 AppContext（DI 模式）。
-/// 旧代码仍可通过 `extract_principal(req)` 或 `conf::get()` / `db::get()` 全局访问。
 #[endpoint(
     tags("认证管理"),
     operation_id = "getUserInfo",
@@ -54,14 +60,8 @@ async fn login(req: &mut Request, depot: &mut Depot, res: &mut Response) {
     )
 )]
 async fn get_user_info(req: &mut Request, depot: &mut Depot, res: &mut Response) {
-    // ------ DI 示例：从 Depot 获取 AppContext ------
-    // 新 handler 可通过 `ctx.db` 获取数据库连接，替换全局 `db::get()`
-    // 新 service 可将 `db: &DatabaseConnection` 作为参数传入，便于单元测试 mock
-    if let Some(_ctx) = AppContext::from_depot(depot) {
-        tracing::debug!("AppContext injected via Depot");
-    }
-
-    // 原有逻辑保持不变
+    // DI 示例：AppContext 已注入到 Depot
+    let _ = AppContext::from_depot(depot);
     match extract_principal(req) {
         Ok(principal) => daoyi_cloud_common::json_ok!(res, principal),
         Err(e) => e.write_to_response(res),
