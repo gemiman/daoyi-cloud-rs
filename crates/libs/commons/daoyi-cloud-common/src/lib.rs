@@ -2,6 +2,7 @@ pub mod app;
 pub mod auth;
 pub mod conf;
 pub mod constants;
+pub mod context;
 pub mod db;
 pub mod error;
 pub mod extract;

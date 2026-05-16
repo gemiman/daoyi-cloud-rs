@@ -5,8 +5,11 @@ pub mod ratelimit;
 
 use crate::conf::ServerConfig;
 use crate::conf::server::CorsConfig;
+use crate::context::{AppContext, InjectContext};
 use crate::db;
+use crate::server::headers::SecurityHeadersMiddleware;
 use crate::server::metrics::MetricsMiddleware;
+use crate::server::ratelimit::RateLimitMiddleware;
 use salvo::cors::{AllowOrigin, Cors, CorsHandler};
 use salvo::http::Method;
 use salvo::http::header::HeaderValue;
@@ -25,6 +28,7 @@ const DEFAULT_REQUEST_TIMEOUT_SECS: u64 = 30;
 
 pub struct AppServer {
     config: &'static ServerConfig,
+    ctx: Arc<AppContext>,
     shutdown_flag: Arc<AtomicBool>,
 }
 
@@ -32,15 +36,17 @@ impl Clone for AppServer {
     fn clone(&self) -> Self {
         Self {
             config: self.config,
+            ctx: self.ctx.clone(),
             shutdown_flag: self.shutdown_flag.clone(),
         }
     }
 }
 
 impl AppServer {
-    pub fn new(config: &'static ServerConfig) -> Self {
+    pub fn new(config: &'static ServerConfig, ctx: Arc<AppContext>) -> Self {
         Self {
             config,
+            ctx,
             shutdown_flag: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -97,7 +103,6 @@ impl AppServer {
             .push(Router::with_path("metrics").get(metrics::report))
             .hoop(TrailingSlash::new(TrailingSlashAction::Remove));
 
-        // OpenAPI 文档
         let doc = OpenApi::new("DaoYi Cloud API", "0.9.0")
             .add_security_scheme(
                 "bearer_auth",
@@ -121,15 +126,15 @@ impl AppServer {
             )
             .push(Scalar::new("/api-docs/openapi.json").into_router("/scalar"));
 
-        // 可配置 CORS
         let cors = Self::build_cors(&self.config.cors);
 
-        // 全局中间件（外层 → 内层）：
-        //   RateLimit → SecurityHeaders → Metrics → RequestId → CORS → Timeout
-        use crate::server::headers::SecurityHeadersMiddleware;
-        use crate::server::ratelimit::RateLimitMiddleware;
+        // 注入 AppContext 到 Depo
+        let ctx_injector = InjectContext::new(self.ctx.clone());
 
+        // 全局中间件（外层 → 内层）：
+        //   InjectCtx → RateLimit → SecurityHeaders → Metrics → RequestId → CORS → Timeout
         let service = Service::new(router)
+            .hoop(ctx_injector)
             .hoop(RateLimitMiddleware::new())
             .hoop(SecurityHeadersMiddleware::new())
             .hoop(MetricsMiddleware::new())

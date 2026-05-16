@@ -463,12 +463,13 @@ Handler 模式演进：`success!(res,data)` → `json_ok!(res,data)` + `err.writ
 
 ## 结论
 
-daoyi-cloud-rs 当前是一个**代码结构清晰、分层合理的单体脚手架项目**，适合快速启动新模块。但要成为**生产可用的 Rust 微服务平台
-**，还需重点解决以下瓶颈：
+daoyi-cloud-rs 当前是一个**具备生产就绪特征的项目**，已完成大部分 P0/P1 优化。当前状态：
 
-1. **架构弹性**（P0）：全局单例 → 依赖注入，这是所有测试能力的基础
-2. **可观测性**（P0）：Metrics + Health Check ✅ 已覆盖
-3. **基础设施**（P0）：Docker + CI + DB Migration ✅ 已覆盖
+- **架构弹性**（P0 1.1）：AppContext DI 框架 ✅ 已建立基础，向后兼容
+- **可观测性**（P0）：Metrics + Health Check ✅ 已覆盖
+- **基础设施**（P0）：Docker + CI + DB Migration ✅ 已覆盖
+- **安全**：JWT 强制配置 + 密码强度 8 位 + 6 个 HTTP 安全头 + 限流 1000/min ✅
+- **错误处理**：业务错误码 + 自动日志 + RequestId 追踪 ✅
 
 建议按 P0 → P1 → P2 → P3 的顺序逐步落地。
 
@@ -485,3 +486,24 @@ daoyi-cloud-rs 当前是一个**代码结构清晰、分层合理的单体脚手
 | **7.3** | JSON 结构化日志 | logger/mod.rs（支持 RUST_LOG_FORMAT=json）                   | ✅  |
 
 **中间件链（外层→内层）**: RateLimit → SecurityHeaders → Metrics → RequestId → CORS → Timeout
+
+### 第 5 轮（2026-05-16）— 依赖注入框架
+
+| 编号      | 项目                | 变更文件                                              | 状态 |
+|---------|-------------------|---------------------------------------------------|----|
+| **1.1** | AppContext 结构体    | `context/mod.rs`（新建，持有 db + jwt 快照）               | ✅  |
+| **1.1** | InjectContext 中间件 | `context/mod.rs`（新建，注入 Depot）                     | ✅  |
+| **1.1** | app::run() 改造     | `app/mod.rs`（使用 `AppContext::build`）              | ✅  |
+| **1.1** | server 注入注册       | `server/mod.rs`（注册 InjectContext 中间件）             | ✅  |
+| **1.1** | handler 演示        | `auth/mod.rs`（展示 `AppContext::from_depot(depot)`） | ✅  |
+
+**DI 模式**：
+
+```
+1. AppContext::build(app_name) → 初始化所有组件，返回 Arc<AppContext>
+2. InjectContext 中间件 → 注入到每个请求的 Depot 中
+3. handler 中通过 AppContext::from_depot(depot) 获取
+4. 旧代码 conf::get() / db::get() / jwt::default_jwt() 仍然可用（向后兼容）
+```
+
+**剩余工作**：Service 层逐步改为接收 `&AppContext` / `&DatabaseConnection` 参数，单元测试时可注入 mock DB。
